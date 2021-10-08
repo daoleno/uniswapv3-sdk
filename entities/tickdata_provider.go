@@ -2,13 +2,17 @@ package entities
 
 import "math/big"
 
+type Tick struct {
+	LiquidityNet *big.Int
+}
+
 // Provides information about ticks
 type TickDataProvider interface {
 	/**
 	 * Return information corresponding to a specific tick
 	 * @param tick the tick to load
 	 */
-	GetTick(tick int64) *big.Int
+	GetTick(tick int64) Tick
 
 	/**
 	 * Return the next tick that is initialized within a single word

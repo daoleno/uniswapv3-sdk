@@ -146,7 +146,7 @@ func GetTickAtSqrtRatio(sqrtRatioX96 *big.Int) (int64, error) {
 		r = new(big.Int).Rsh(new(big.Int).Mul(r, r), 127)
 		f := new(big.Int).Rsh(r, 128)
 		log2 = new(big.Int).Or(log2, new(big.Int).Lsh(f, uint(63-i)))
-		r = new(big.Int).Rsh(r, f)
+		r = new(big.Int).Rsh(r, uint(f.Int64()))
 	}
 
 	magicSqrt10001, _ := new(big.Int).SetString("255738958999603826347141", 10)

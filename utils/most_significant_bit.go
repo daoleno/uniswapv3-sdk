@@ -18,11 +18,12 @@ func MostSignificantBit(x *big.Int) (int64, error) {
 		return 0, ErrInvalidInput
 	}
 	var msb int64
-	for _, power := [128, 64, 32, 16, 8, 4, 2, 1] {
+	for _, power := range []int64{128, 64, 32, 16, 8, 4, 2, 1} {
 		min := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(power)), nil)
 		if x.Cmp(min) >= 0 {
 			x = new(big.Int).Rsh(x, uint(power))
 			msb += power
+		}
 	}
 	return msb, nil
 }
