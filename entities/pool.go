@@ -148,7 +148,7 @@ func (p *Pool) ChainID() uint {
  * @param sqrtPriceLimitX96 The Q64.96 sqrt price limit
  * @returns The output amount and the pool with updated state
  */
-func (p *Pool) GetOutputAmount(inputAmount entities.CurrencyAmount, sqrtPriceLimitX96 *big.Int) (*entities.CurrencyAmount, *Pool, error) {
+func (p *Pool) GetOutputAmount(inputAmount *entities.CurrencyAmount, sqrtPriceLimitX96 *big.Int) (*entities.CurrencyAmount, *Pool, error) {
 	// TODO: check involoves token
 	// invariant(this.involvesToken(inputAmount.currency), 'TOKEN')
 	zeroForOne := inputAmount.Currency.Equal(p.Token0.Currency)
@@ -175,7 +175,7 @@ func (p *Pool) GetOutputAmount(inputAmount entities.CurrencyAmount, sqrtPriceLim
  * @param sqrtPriceLimitX96 The Q64.96 sqrt price limit. If zero for one, the price cannot be less than this value after the swap. If one for zero, the price cannot be greater than this value after the swap
  * @returns The input amount and the pool with updated state
  */
-func (p *Pool) GetInputAmount(outputAmount entities.CurrencyAmount, sqrtPriceLimitX96 *big.Int) (*entities.CurrencyAmount, *Pool, error) {
+func (p *Pool) GetInputAmount(outputAmount *entities.CurrencyAmount, sqrtPriceLimitX96 *big.Int) (*entities.CurrencyAmount, *Pool, error) {
 	// TODO: check involoves token
 	// invariant(outputAmount.currency.isToken && this.involvesToken(outputAmount.currency), 'TOKEN')
 	zeroForOne := outputAmount.Currency.Equal(p.Token1.Currency)
