@@ -3,9 +3,9 @@ package entities
 import (
 	"errors"
 	"math/big"
+	"sort"
 
 	"github.com/daoleno/uniswap-sdk-core/entities"
-	"github.com/daoleno/uniswap-sdk-core/utils"
 	"github.com/daoleno/uniswapv3-sdk/constants"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -20,6 +20,8 @@ var (
 	ErrNoPools                  = errors.New("no pools")
 	ErrInvalidMaxHops           = errors.New("invalid max hops")
 	ErrInvalidRecursion         = errors.New("invalid recursion")
+	ErrInvalidMaxSize           = errors.New("invalid max size")
+	ErrMaxSizeExceeded          = errors.New("max size exceeded")
 )
 
 /**
@@ -31,15 +33,15 @@ var (
  * @param b The second trade to compare
  * @returns A sorted ordering for two neighboring elements in a trade array
  */
-func tradeComparator(a, b *Trade) (int, error) {
-	if !a.InputAmount().Currency.Equal(b.InputAmount().Currency) {
-		return 0, ErrInputCurrencyMismatch
-	}
-	if !a.OutputAmount().Currency.Equal(b.OutputAmount().Currency) {
-		return 0, ErrOutputCurrencyMismatch
-	}
-	if a.OutputAmount().EqualTo(b.OutputAmount()) {
-		if a.InputAmount().EqualTo(b.InputAmount()) {
+func tradeComparator(a, b *Trade) int {
+	// if !a.InputAmount().Currency.Equal(b.InputAmount().Currency) {
+	// 	return 0, ErrInputCurrencyMismatch
+	// }
+	// if !a.OutputAmount().Currency.Equal(b.OutputAmount().Currency) {
+	// 	return 0, ErrOutputCurrencyMismatch
+	// }
+	if a.OutputAmount().Fraction.EqualTo(b.OutputAmount().Fraction) {
+		if a.InputAmount().Fraction.EqualTo(b.InputAmount().Fraction) {
 			// consider the number of hops since each hop costs gas
 			var aHops, bHops int
 			for _, swap := range a.Swaps {
@@ -48,20 +50,20 @@ func tradeComparator(a, b *Trade) (int, error) {
 			for _, swap := range b.Swaps {
 				bHops += len(swap.Route.TokenPath)
 			}
-			return aHops - bHops, nil
+			return aHops - bHops
 		}
 		// trade A requires less input than trade B, so A should come first
-		if a.InputAmount().LessThan(b.InputAmount()) {
-			return -1, nil
+		if a.InputAmount().Fraction.LessThan(b.InputAmount().Fraction) {
+			return -1
 		} else {
-			return 1, nil
+			return 1
 		}
 	} else {
 		// tradeA has less output than trade B, so should come second
-		if a.OutputAmount().LessThan(b.OutputAmount()) {
-			return 1, nil
+		if a.OutputAmount().Fraction.LessThan(b.OutputAmount().Fraction) {
+			return 1
 		} else {
-			return -1, nil
+			return -1
 		}
 	}
 }
@@ -265,7 +267,7 @@ type WrappedRoute struct {
 func FromRoutes(wrappedRoutes []*WrappedRoute, tradeType entities.TradeType) (*Trade, error) {
 	var swaps []*Swap
 	for _, wrappedRoute := range wrappedRoutes {
-		amounts := make([]*entities.CurrencyAmount, len(route.Route.TokenPath))
+		amounts := make([]*entities.CurrencyAmount, len(wrappedRoute.Route.TokenPath))
 		var (
 			inputAmount  *entities.CurrencyAmount
 			outputAmount *entities.CurrencyAmount
@@ -501,15 +503,104 @@ func BestTradeExactIn(pools []*Pool, currencyAmountIn *entities.CurrencyAmount, 
 		}
 
 		if amountOut.Currency.IsToken && amountOut.Currency.Equal(tokenOut) {
-			utils.SortedInsert(bestTrades, trade, opts.MaxNumResults, tradeComparator)
+			bestTrades, err = sortedInsert(bestTrades, trade, opts.MaxNumResults, tradeComparator)
+			if err != nil {
+				return nil, err
+			}
 		} else if opts.MaxHops > 1 && len(pools) > 1 {
 			var poolsExcludingThisPool []*Pool
 			poolsExcludingThisPool = append(poolsExcludingThisPool, pools[:i]...)
 			poolsExcludingThisPool = append(poolsExcludingThisPool, pools[i+1:]...)
 
 			// otherwise, consider all the other paths that lead from this token as long as we have not exceeded maxHops
-			BestTradeExactIn(poolsExcludingThisPool, currencyAmountIn, currencyOut, BestTradeOptions{MaxNumResults: opts.MaxNumResults, MaxHops: opts.MaxHops - 1}, append(currentPools, pool), amountOut, bestTrades)
+			bestTrades, err = BestTradeExactIn(poolsExcludingThisPool, currencyAmountIn, currencyOut, BestTradeOptions{MaxNumResults: opts.MaxNumResults, MaxHops: opts.MaxHops - 1}, append(currentPools, pool), amountOut, bestTrades)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return bestTrades, nil
+}
+
+/**
+ * similar to the above method but instead targets a fixed output amount
+ * given a list of pools, and a fixed amount out, returns the top `maxNumResults` trades that go from an input token
+ * to an output token amount, making at most `maxHops` hops
+ * note this does not consider aggregation, as routes are linear. it's possible a better route exists by splitting
+ * the amount in among multiple routes.
+ * @param pools the pools to consider in finding the best trade
+ * @param currencyIn the currency to spend
+ * @param currencyAmountOut the desired currency amount out
+ * @param nextAmountOut the exact amount of currency out
+ * @param maxNumResults maximum number of results to return
+ * @param maxHops maximum number of hops a returned trade can make, e.g. 1 hop goes through a single pool
+ * @param currentPools used in recursion; the current list of pools
+ * @param bestTrades used in recursion; the current list of best trades
+ * @returns The exact out trade
+ */
+func BestTradeExactOut(pools []*Pool, currencyIn *entities.Currency, currencyAmountOut *entities.CurrencyAmount, opts BestTradeOptions, currentPools []*Pool, nextAmountOut *entities.CurrencyAmount, bestTrades []*Trade) ([]*Trade, error) {
+	amountOut := nextAmountOut
+	tokenIn := currencyIn
+
+	for i := 0; i < len(pools); i++ {
+		pool := pools[i]
+		// pool irrelevant
+		if !pool.Token0.Equal(amountOut.Currency) && !pool.Token1.Equal(amountOut.Currency) {
+			continue
+		}
+		amountIn, _, err := pool.GetInputAmount(amountOut, nil)
+		if err != nil {
+			// TODO
+			// not enough liquidity in this pool
+			// if error.isInsufficientReservesError {
+			// 	continue
+			// }
+			return nil, err
+		}
+		// we have arrived at the input token, so this is the final trade of one of the paths
+		if amountIn.Currency.Equal(tokenIn) {
+			routes := append(currentPools, pool)
+			r, err := NewRoute(routes, &entities.Token{Currency: currencyIn}, &entities.Token{Currency: currencyAmountOut.Currency})
+			if err != nil {
+				return nil, err
+			}
+			trade, err := FromRoute(r, currencyAmountOut, entities.ExactOutput)
+			if err != nil {
+				return nil, err
+			}
+			bestTrades, err = sortedInsert(bestTrades, trade, opts.MaxNumResults, tradeComparator)
+			if err != nil {
+				return nil, err
+			}
+		} else if opts.MaxHops > 1 && len(pools) > 1 {
+			var poolsExcludingThisPool []*Pool
+			poolsExcludingThisPool = append(poolsExcludingThisPool, pools[:i]...)
+			poolsExcludingThisPool = append(poolsExcludingThisPool, pools[i+1:]...)
+
+			// otherwise, consider all the other paths that arrive at this token as long as we have not exceeded maxHops
+			bestTrades, err = BestTradeExactOut(poolsExcludingThisPool, currencyIn, currencyAmountOut, BestTradeOptions{MaxNumResults: opts.MaxNumResults, MaxHops: opts.MaxHops - 1}, append(currentPools, pool), amountIn, bestTrades)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return bestTrades, nil
+}
+
+// sortedInsert given an array of items sorted by `comparator`, insert an item into its sort index and constrain the size to
+// `maxSize` by removing the last item
+func sortedInsert(items []*Trade, add *Trade, maxSize int, comparator func(a, b *Trade) int) ([]*Trade, error) {
+	if maxSize <= 0 {
+		return nil, ErrInvalidMaxSize
+	}
+	if len(items) > maxSize {
+		return nil, ErrMaxSizeExceeded
+	}
+	i := sort.Search(len(items), func(i int) bool {
+		return comparator(items[i], add) > 0
+	})
+	items = append(items, nil)
+	copy(items[i+1:], items[i:])
+	items[i] = add
+	return items, nil
 }
