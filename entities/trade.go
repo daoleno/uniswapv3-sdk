@@ -164,7 +164,7 @@ func (t *Trade) PriceImpact() (*entities.Percent, error) {
 		spotOutputAmount = spotOutputAmount.Add(quotePrice)
 	}
 
-	priceImpact := spotOutputAmount.Subtract(t.OutputAmount()).Divide(spotOutputAmount)
+	priceImpact := spotOutputAmount.Subtract(t.OutputAmount()).Divide(spotOutputAmount.Fraction)
 	t.priceImpact = entities.NewPercent(priceImpact.Numerator, priceImpact.Denominator)
 	return t.priceImpact, nil
 }
