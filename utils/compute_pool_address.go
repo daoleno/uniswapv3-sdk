@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"math/big"
+
 	"github.com/daoleno/uniswap-sdk-core/entities"
 	"github.com/daoleno/uniswapv3-sdk/constants"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -31,14 +34,29 @@ func ComputePoolAddress(factoryAddress common.Address, tokenA *entities.Token, t
 		token0 = tokenB
 		token1 = tokenA
 	}
-	return getCreate2Address(factoryAddress, token0.Address, token1.Address, initCodeHashManualOverride), nil
+	return getCreate2Address(factoryAddress, token0.Address, token1.Address, fee, initCodeHashManualOverride), nil
 }
 
-func getCreate2Address(factoyAddress, addressA, addressB common.Address, initCodeHashManualOverride string) common.Address {
+func getCreate2Address(factoyAddress, addressA, addressB common.Address, fee constants.FeeAmount, initCodeHashManualOverride string) common.Address {
 	var salt [32]byte
-	copy(salt[:], crypto.Keccak256(append(addressA.Bytes(), addressB.Bytes()...)))
+	copy(salt[:], crypto.Keccak256(abiEncode(addressA, addressB, fee)))
+
 	if initCodeHashManualOverride != "" {
-		crypto.CreateAddress2(factoyAddress, salt, []byte(initCodeHashManualOverride))
+		crypto.CreateAddress2(factoyAddress, salt, common.FromHex(initCodeHashManualOverride))
 	}
-	return crypto.CreateAddress2(factoyAddress, salt, []byte(constants.PoolInitCodeHash))
+	return crypto.CreateAddress2(factoyAddress, salt, common.FromHex(constants.PoolInitCodeHash))
+}
+
+func abiEncode(addressA, addressB common.Address, fee constants.FeeAmount) []byte {
+	addressTy, _ := abi.NewType("address", "address", nil)
+	uint256Ty, _ := abi.NewType("uint256", "uint256", nil)
+
+	arguments := abi.Arguments{{Type: addressTy}, {Type: addressTy}, {Type: uint256Ty}}
+
+	bytes, _ := arguments.Pack(
+		addressA,
+		addressB,
+		big.NewInt(int64(fee)),
+	)
+	return bytes
 }
