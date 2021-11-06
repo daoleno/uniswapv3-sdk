@@ -18,7 +18,7 @@ var (
 )
 
 // The default factory enabled fee amounts, denominated in hundredths of bips.
-type FeeAmount uint
+type FeeAmount uint64
 
 const (
 	FeeLow    FeeAmount = 500
