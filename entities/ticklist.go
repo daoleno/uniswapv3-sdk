@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	ErrZeroTickSpacing    = errors.New("tick spacing must be greater than 0")
 	ErrInvalidTickSpacing = errors.New("invalid tick spacing")
 	ErrZeroNet            = errors.New("tick net delta must be zero")
 	ErrSorted             = errors.New("ticks must be sorted")
@@ -14,12 +15,12 @@ var (
 
 func ValidateList(ticks []Tick, tickSpacing int) error {
 	if tickSpacing <= 0 {
-		return ErrInvalidTickSpacing
+		return ErrZeroTickSpacing
 	}
 
 	// ensure ticks are spaced appropriately
-	for i := 0; i < len(ticks); i++ {
-		if i%tickSpacing != 0 {
+	for _, t := range ticks {
+		if t.Index%tickSpacing != 0 {
 			return ErrInvalidTickSpacing
 		}
 	}

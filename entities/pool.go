@@ -211,7 +211,7 @@ func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int
 		if zeroForOne {
 			sqrtPriceLimitX96 = new(big.Int).Add(utils.MinSqrtRatio, constants.One)
 		} else {
-			sqrtPriceLimitX96 = new(big.Int).Add(utils.MaxSqrtRatio, constants.One)
+			sqrtPriceLimitX96 = new(big.Int).Sub(utils.MaxSqrtRatio, constants.One)
 		}
 	}
 
@@ -291,14 +291,14 @@ func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int
 
 		if exactInput {
 			state.amountSpecifiedRemaining = new(big.Int).Sub(state.amountSpecifiedRemaining, new(big.Int).Add(step.amountIn, step.feeAmount))
-			state.amountCalculated = new(big.Int).Add(state.amountCalculated, step.amountOut)
+			state.amountCalculated = new(big.Int).Sub(state.amountCalculated, step.amountOut)
 		} else {
 			state.amountSpecifiedRemaining = new(big.Int).Add(state.amountSpecifiedRemaining, step.amountOut)
 			state.amountCalculated = new(big.Int).Add(state.amountCalculated, new(big.Int).Add(step.amountIn, step.feeAmount))
 		}
 
 		// TODO
-		if state.sqrtPriceX96.Cmp(step.sqrtPriceNextX96) != 0 {
+		if state.sqrtPriceX96.Cmp(step.sqrtPriceNextX96) == 0 {
 			// if the tick is initialized, run the tick transition
 			if step.initialized {
 				liquidityNet := p.TickDataProvider.GetTick(step.tickNext).LiquidityNet

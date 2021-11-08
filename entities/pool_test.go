@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	USDC = entities.NewToken(1, common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), 6, "USDC", "USD Coin")
-	DAI  = entities.NewToken(1, common.HexToAddress("0x6B175474E89094C44Da98b954EedeAC495271d0F"), 18, "DAI", "Dai Stablecoin")
+	USDC     = entities.NewToken(1, common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), 6, "USDC", "USD Coin")
+	DAI      = entities.NewToken(1, common.HexToAddress("0x6B175474E89094C44Da98b954EedeAC495271d0F"), 18, "DAI", "Dai Stablecoin")
+	OneEther = big.NewInt(1e18)
 )
 
 func TestNewPool(t *testing.T) {
@@ -109,4 +110,73 @@ func TestInvolvesToken(t *testing.T) {
 	assert.True(t, pool.InvolvesToken(USDC), "involves USDC")
 	assert.True(t, pool.InvolvesToken(DAI), "involves DAI")
 	assert.False(t, pool.InvolvesToken(entities.WETH9[1]), "does not involve WETH9")
+}
+
+func newTestPool() *Pool {
+	ticks := []Tick{
+		{
+			Index:          NearestUsableTick(utils.MinTick, constants.TickSpaces[constants.FeeLow]),
+			LiquidityNet:   OneEther,
+			LiquidityGross: OneEther,
+		},
+		{
+			Index:          NearestUsableTick(utils.MaxTick, constants.TickSpaces[constants.FeeLow]),
+			LiquidityNet:   new(big.Int).Mul(OneEther, constants.NegativeOne),
+			LiquidityGross: OneEther,
+		},
+	}
+
+	p, err := NewTickListDataProvider(ticks, constants.TickSpaces[constants.FeeLow])
+	if err != nil {
+		panic(err)
+	}
+
+	pool, err := NewPool(USDC, DAI, constants.FeeLow, utils.EncodeSqrtRatioX96(constants.One, constants.One), OneEther, 0, p)
+	if err != nil {
+		panic(err)
+	}
+	return pool
+}
+func TestGetOutputAmount(t *testing.T) {
+	pool := newTestPool()
+
+	// USDC -> DAI
+	inputAmount := entities.FromRawAmount(USDC.Currency, big.NewInt(100))
+	outputAmount, _, err := pool.GetOutputAmount(inputAmount, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.True(t, outputAmount.Currency.Equal(DAI.Currency))
+	assert.Equal(t, outputAmount.Quotient(), big.NewInt(98))
+
+	// DAI -> USDC
+	inputAmount = entities.FromRawAmount(DAI.Currency, big.NewInt(100))
+	outputAmount, _, err = pool.GetOutputAmount(inputAmount, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.True(t, outputAmount.Currency.Equal(USDC.Currency))
+	assert.Equal(t, outputAmount.Quotient(), big.NewInt(98))
+}
+
+func TestGetInputAmount(t *testing.T) {
+	pool := newTestPool()
+
+	// USDC -> DAI
+	outputAmount := entities.FromRawAmount(DAI.Currency, big.NewInt(98))
+	inputAmount, _, err := pool.GetInputAmount(outputAmount, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.True(t, inputAmount.Currency.Equal(USDC.Currency))
+	assert.Equal(t, inputAmount.Quotient(), big.NewInt(100))
+
+	// DAI -> USDC
+	outputAmount = entities.FromRawAmount(USDC.Currency, big.NewInt(98))
+	inputAmount, _, err = pool.GetInputAmount(outputAmount, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.True(t, inputAmount.Currency.Equal(DAI.Currency))
+	assert.Equal(t, inputAmount.Quotient(), big.NewInt(100))
 }

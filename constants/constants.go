@@ -24,14 +24,15 @@ const (
 	FeeLow    FeeAmount = 500
 	FeeMedium FeeAmount = 3000
 	FeeHigh   FeeAmount = 10000
-	FeeMax    FeeAmount = 1000000
+
+	FeeMax FeeAmount = 1000000
 )
 
 // The default factory tick spacings by fee amount.
 var TickSpaces = map[FeeAmount]int{
-	FeeLow:    500,
-	FeeMedium: 3000,
-	FeeHigh:   10000,
+	FeeLow:    10,
+	FeeMedium: 60,
+	FeeHigh:   200,
 }
 
 var (
