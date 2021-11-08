@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	MinTick int64 = -887272  // The minimum tick that can be used on any pool.
-	MaxTick int64 = -MinTick // The maximum tick that can be used on any pool.
+	MinTick = -887272  // The minimum tick that can be used on any pool.
+	MaxTick = -MinTick // The maximum tick that can be used on any pool.
 )
 
 var (
@@ -36,7 +36,7 @@ func mulShift(val *big.Int, mulBy string) *big.Int {
  * Returns the sqrt ratio as a Q64.96 for the given tick. The sqrt ratio is computed as sqrt(1.0001)^tick
  * @param tick the tick for which to compute the sqrt ratio
  */
-func GetSqrtRatioAtTick(tick int64) (*big.Int, error) {
+func GetSqrtRatioAtTick(tick int) (*big.Int, error) {
 	if tick < MinTick || tick > MaxTick {
 		return nil, ErrInvalidTick
 	}
@@ -124,7 +124,7 @@ func GetSqrtRatioAtTick(tick int64) (*big.Int, error) {
  * and #getSqrtRatioAtTick(tick + 1) > sqrtRatioX96
  * @param sqrtRatioX96 the sqrt ratio as a Q64.96 for which to compute the tick
  */
-func GetTickAtSqrtRatio(sqrtRatioX96 *big.Int) (int64, error) {
+func GetTickAtSqrtRatio(sqrtRatioX96 *big.Int) (int, error) {
 	if sqrtRatioX96.Cmp(MinSqrtRatio) < 0 || sqrtRatioX96.Cmp(MaxSqrtRatio) >= 0 {
 		return 0, ErrInvalidSqrtRatio
 	}
@@ -158,16 +158,16 @@ func GetTickAtSqrtRatio(sqrtRatioX96 *big.Int) (int64, error) {
 	tickHigh := new(big.Int).Rsh(new(big.Int).Add(logSqrt10001, magicTickHigh), 128).Int64()
 
 	if tickLow == tickHigh {
-		return tickLow, nil
+		return int(tickLow), nil
 	}
 
-	sqrtRatio, err := GetSqrtRatioAtTick(tickHigh)
+	sqrtRatio, err := GetSqrtRatioAtTick(int(tickHigh))
 	if err != nil {
 		return 0, err
 	}
 	if sqrtRatio.Cmp(sqrtRatioX96) <= 0 {
-		return tickHigh, nil
+		return int(tickHigh), nil
 	} else {
-		return tickLow, nil
+		return int(tickLow), nil
 	}
 }

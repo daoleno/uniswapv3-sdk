@@ -28,7 +28,7 @@ const (
 )
 
 // The default factory tick spacings by fee amount.
-var TickSpaces = map[FeeAmount]int64{
+var TickSpaces = map[FeeAmount]int{
 	FeeLow:    500,
 	FeeMedium: 3000,
 	FeeHigh:   10000,

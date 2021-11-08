@@ -20,7 +20,7 @@ var (
 
 type StepComputations struct {
 	sqrtPriceStartX96 *big.Int
-	tickNext          int64
+	tickNext          int
 	initialized       bool
 	sqrtPriceNextX96  *big.Int
 	amountIn          *big.Int
@@ -35,7 +35,7 @@ type Pool struct {
 	Fee              constants.FeeAmount
 	SqrtRatioX96     *big.Int
 	Liquidity        *big.Int
-	TickCurrent      int64
+	TickCurrent      int
 	TickDataProvider TickDataProvider
 
 	token0Price *entities.Price
@@ -56,7 +56,7 @@ func GetAddress(tokenA, tokenB *entities.Token, fee constants.FeeAmount, initCod
  * @param tickCurrent The current tick of the pool
  * @param ticks The current state of the pool ticks or a data provider that can return tick data
  */
-func NewPool(tokenA, tokenB *entities.Token, fee constants.FeeAmount, sqrtRatioX96 *big.Int, liquidity *big.Int, tickCurrent int64, ticks TickDataProvider) (*Pool, error) {
+func NewPool(tokenA, tokenB *entities.Token, fee constants.FeeAmount, sqrtRatioX96 *big.Int, liquidity *big.Int, tickCurrent int, ticks TickDataProvider) (*Pool, error) {
 	if fee >= constants.FeeMax {
 		return nil, ErrFeeTooHigh
 	}
@@ -206,7 +206,7 @@ func (p *Pool) GetInputAmount(outputAmount *entities.CurrencyAmount, sqrtPriceLi
  * @returns liquidity
  * @returns tickCurrent
  */
-func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int) (amountCalCulated *big.Int, sqrtRatioX96 *big.Int, liquidity *big.Int, tickCurrent int64, err error) {
+func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int) (amountCalCulated *big.Int, sqrtRatioX96 *big.Int, liquidity *big.Int, tickCurrent int, err error) {
 	if sqrtPriceLimitX96 == nil {
 		if zeroForOne {
 			sqrtPriceLimitX96 = new(big.Int).Add(utils.MinSqrtRatio, constants.One)
@@ -239,7 +239,7 @@ func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int
 		amountSpecifiedRemaining *big.Int
 		amountCalculated         *big.Int
 		sqrtPriceX96             *big.Int
-		tick                     int64
+		tick                     int
 		liquidity                *big.Int
 	}{
 		amountSpecifiedRemaining: amountSpecified,
@@ -325,6 +325,6 @@ func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int
 	return state.amountCalculated, state.sqrtPriceX96, state.liquidity, state.tick, nil
 }
 
-func (p *Pool) tickSpacing() int64 {
+func (p *Pool) tickSpacing() int {
 	return constants.TickSpaces[p.Fee]
 }
