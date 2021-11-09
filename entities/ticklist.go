@@ -91,7 +91,7 @@ func NextInitializedTickWithinOneWord(ticks []Tick, tick int, lte bool, tickSpac
 	if lte {
 		wordPos := int(compressed) >> 8
 		minimum := (wordPos << 8) * tickSpacing
-		if IsBelowSmallest(ticks, minimum) {
+		if IsBelowSmallest(ticks, tick) {
 			return minimum, false
 		}
 		index := NextInitializedTick(ticks, tick, lte).Index
@@ -99,8 +99,8 @@ func NextInitializedTickWithinOneWord(ticks []Tick, tick int, lte bool, tickSpac
 		return int(nextInitializedTick), int(nextInitializedTick) == index
 	} else {
 		wordPos := int(compressed+1) >> 8
-		maximum := (wordPos+1)<<8*tickSpacing - 1
-		if IsAtOrAboveLargest(ticks, maximum) {
+		maximum := ((wordPos+1)<<8)*tickSpacing - 1
+		if IsAtOrAboveLargest(ticks, tick) {
 			return maximum, false
 		}
 		index := NextInitializedTick(ticks, tick, lte).Index
