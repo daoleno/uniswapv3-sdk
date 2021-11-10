@@ -215,7 +215,7 @@ func FromRoute(route *Route, amount *entities.CurrencyAmount, tradeType entities
 			return nil, ErrInvalidAmountForRoute
 		}
 		amounts[0] = amount
-		for i := 1; i < len(route.TokenPath)-1; i++ {
+		for i := 0; i < len(route.TokenPath)-1; i++ {
 			pool := route.Pools[i]
 			outputAmount, _, err = pool.GetOutputAmount(amounts[i], nil)
 			if err != nil {
@@ -279,7 +279,7 @@ func FromRoutes(wrappedRoutes []*WrappedRoute, tradeType entities.TradeType) (*T
 				return nil, ErrInvalidAmountForRoute
 			}
 			amounts[0] = entities.FromFractionalAmount(route.Input.Currency, amount.Numerator, amount.Denominator)
-			for i := 1; i < len(route.TokenPath)-1; i++ {
+			for i := 0; i < len(route.TokenPath)-1; i++ {
 				pool := route.Pools[i]
 				outputAmount, _, err := pool.GetOutputAmount(amounts[i], nil)
 				if err != nil {
