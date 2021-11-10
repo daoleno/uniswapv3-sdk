@@ -90,10 +90,10 @@ func (r *Route) MidPrice() (*entities.Price, error) {
 	)
 	if r.Pools[0].Token0.Equals(r.Input) {
 		nextInput = r.Pools[0].Token1
-		price = r.Pools[0].token0Price
+		price = r.Pools[0].Token0Price()
 	} else {
 		nextInput = r.Pools[0].Token0
-		price = r.Pools[0].token1Price
+		price = r.Pools[0].Token1Price()
 	}
 	price, err := reducePrice(nextInput, price, r.Pools[1:])
 	if err != nil {
@@ -109,13 +109,13 @@ func reducePrice(nextInput *entities.Token, price *entities.Price, pools []*Pool
 	for _, p := range pools {
 		if nextInput.Equals(p.Token0) {
 			nextInput = p.Token1
-			price, err = price.Multiply(p.token0Price)
+			price, err = price.Multiply(p.Token0Price())
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			nextInput = p.Token0
-			price, err = price.Multiply(p.token1Price)
+			price, err = price.Multiply(p.Token1Price())
 			if err != nil {
 				return nil, err
 			}
