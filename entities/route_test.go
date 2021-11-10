@@ -94,42 +94,42 @@ func TestMidPrice(t *testing.T) {
 	// correct for 0 -> 1
 	route, _ := NewRoute([]*Pool{pool_0_1}, rtoken0, rtoken1)
 	price, _ := route.MidPrice()
-	assert.True(t, price.BaseCurrency.Equal(token0.Currency))
-	assert.True(t, price.QuoteCurrency.Equal(token1.Currency))
+	assert.True(t, price.BaseCurrency.Equal(rtoken0.Currency))
+	assert.True(t, price.QuoteCurrency.Equal(rtoken1.Currency))
 
 	// correct for 1 -> 0
 	route, _ = NewRoute([]*Pool{pool_0_1}, rtoken1, rtoken0)
 	price, _ = route.MidPrice()
 	assert.Equal(t, price.ToFixed(4), "5.0000")
-	assert.True(t, price.BaseCurrency.Equal(token1.Currency))
-	assert.True(t, price.QuoteCurrency.Equal(token0.Currency))
+	assert.True(t, price.BaseCurrency.Equal(rtoken1.Currency))
+	assert.True(t, price.QuoteCurrency.Equal(rtoken0.Currency))
 
 	// correct for 0 -> 1 -> 2
 	route, _ = NewRoute([]*Pool{pool_0_1, pool_1_2}, rtoken0, rtoken2)
 	price, _ = route.MidPrice()
 	assert.Equal(t, price.ToFixed(4), "0.1000")
-	assert.True(t, price.BaseCurrency.Equal(token0.Currency))
-	assert.True(t, price.QuoteCurrency.Equal(token2.Currency))
+	assert.True(t, price.BaseCurrency.Equal(rtoken0.Currency))
+	assert.True(t, price.QuoteCurrency.Equal(rtoken2.Currency))
 
 	// correct for 2 -> 1 -> 0
 	route, _ = NewRoute([]*Pool{pool_1_2, pool_0_1}, rtoken2, rtoken0)
 	price, _ = route.MidPrice()
 	assert.Equal(t, price.ToFixed(4), "10.0000")
-	assert.True(t, price.BaseCurrency.Equal(token2.Currency))
-	assert.True(t, price.QuoteCurrency.Equal(token0.Currency))
+	assert.True(t, price.BaseCurrency.Equal(rtoken2.Currency))
+	assert.True(t, price.QuoteCurrency.Equal(rtoken0.Currency))
 
 	// correct for ether -> 0
 	route, _ = NewRoute([]*Pool{pool_0_weth}, rEther, rtoken0)
 	price, _ = route.MidPrice()
 	assert.Equal(t, price.ToFixed(4), "0.3333")
 	assert.True(t, price.BaseCurrency.Equal(rEther.Currency))
-	assert.True(t, price.QuoteCurrency.Equal(token0.Currency))
+	assert.True(t, price.QuoteCurrency.Equal(rtoken0.Currency))
 
 	// correct for 1 -> weth
 	route, _ = NewRoute([]*Pool{pool_1_weth}, rtoken1, rweth)
 	price, _ = route.MidPrice()
 	assert.Equal(t, price.ToFixed(4), "0.1429")
-	assert.True(t, price.BaseCurrency.Equal(token1.Currency))
+	assert.True(t, price.BaseCurrency.Equal(rtoken1.Currency))
 	assert.True(t, price.QuoteCurrency.Equal(rweth.Currency))
 
 	// correct for ether -> 0 -> 1 -> weth
