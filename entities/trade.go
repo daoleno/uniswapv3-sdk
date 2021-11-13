@@ -350,8 +350,8 @@ func CreateUncheckedTradeWithMultipleRoutes(routes []*Swap, tradeType entities.T
  * @param tradeType The type of trade, exact input or exact output
  */
 func newTrade(routes []*Swap, tradeType entities.TradeType) (*Trade, error) {
-	inputCurrency := routes[0].Route.Input.Currency
-	outputCurrency := routes[0].Route.Output.Currency
+	inputCurrency := routes[0].InputAmount.Currency
+	outputCurrency := routes[0].OutputAmount.Currency
 	for _, route := range routes {
 		if !inputCurrency.Equal(route.Route.Input.Currency) {
 			return nil, ErrInputCurrencyMismatch

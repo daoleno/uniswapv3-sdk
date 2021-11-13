@@ -193,3 +193,110 @@ func TestFromRoutes(t *testing.T) {
 	}, entities.ExactInput)
 	assert.ErrorIs(t, err, ErrDuplicatePools)
 }
+
+func TestCreateUncheckedTrade(t *testing.T) {
+	r, _ := NewRoute([]*Pool{pool_0_1}, token0, token1)
+	_, err := CreateUncheckedTrade(r, entities.FromRawAmount(token2.Currency, big.NewInt(10000)), entities.FromRawAmount(token1.Currency, big.NewInt(10000)), entities.ExactInput)
+	assert.ErrorIs(t, err, ErrInputCurrencyMismatch, "if input currency does not match route")
+
+	_, err = CreateUncheckedTrade(r, entities.FromRawAmount(token0.Currency, big.NewInt(10000)), entities.FromRawAmount(token2.Currency, big.NewInt(10000)), entities.ExactOutput)
+	assert.ErrorIs(t, err, ErrOutputCurrencyMismatch, "if output currency does not match route")
+
+	_, err = CreateUncheckedTrade(r, entities.FromRawAmount(token0.Currency, big.NewInt(10000)), entities.FromRawAmount(token1.Currency, big.NewInt(100000)), entities.ExactInput)
+	assert.NoError(t, err, "can create an exact input trade without simulating")
+
+	_, err = CreateUncheckedTrade(r, entities.FromRawAmount(token0.Currency, big.NewInt(10000)), entities.FromRawAmount(token1.Currency, big.NewInt(100000)), entities.ExactOutput)
+	assert.NoError(t, err, "can create an exact output trade without simulating")
+}
+
+func TestCreateUncheckedTradeWithMultipleRoutes(t *testing.T) {
+	r0, _ := NewRoute([]*Pool{pool_1_2}, token2, token1)
+	s0 := &Swap{
+		Route:        r0,
+		InputAmount:  entities.FromRawAmount(token2.Currency, big.NewInt(2000)),
+		OutputAmount: entities.FromRawAmount(token1.Currency, big.NewInt(2000)),
+	}
+	r1, _ := NewRoute([]*Pool{pool_0_1}, token0, token1)
+	s1 := &Swap{
+		Route:        r1,
+		InputAmount:  entities.FromRawAmount(token2.Currency, big.NewInt(8000)),
+		OutputAmount: entities.FromRawAmount(token1.Currency, big.NewInt(8000)),
+	}
+	_, err := CreateUncheckedTradeWithMultipleRoutes([]*Swap{s0, s1}, entities.ExactInput)
+	assert.ErrorIs(t, err, ErrInputCurrencyMismatch, "if input currency does not match route with multiple routes")
+
+	r0, _ = NewRoute([]*Pool{pool_0_2}, token0, token2)
+	s0 = &Swap{
+		Route:        r0,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(10000)),
+		OutputAmount: entities.FromRawAmount(token2.Currency, big.NewInt(10000)),
+	}
+	r1, _ = NewRoute([]*Pool{pool_0_1}, token0, token1)
+	s1 = &Swap{
+		Route:        r1,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(10000)),
+		OutputAmount: entities.FromRawAmount(token2.Currency, big.NewInt(10000)),
+	}
+	_, err = CreateUncheckedTradeWithMultipleRoutes([]*Swap{s0, s1}, entities.ExactInput)
+	assert.ErrorIs(t, err, ErrOutputCurrencyMismatch, "if output currency does not match route with multiple routes")
+
+	r0, _ = NewRoute([]*Pool{pool_0_1}, token0, token1)
+	s0 = &Swap{
+		Route:        r0,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(5000)),
+		OutputAmount: entities.FromRawAmount(token1.Currency, big.NewInt(50000)),
+	}
+	r1, _ = NewRoute([]*Pool{pool_0_2, pool_1_2}, token0, token1)
+	s1 = &Swap{
+		Route:        r1,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(5000)),
+		OutputAmount: entities.FromRawAmount(token1.Currency, big.NewInt(50000)),
+	}
+	_, err = CreateUncheckedTradeWithMultipleRoutes([]*Swap{s0, s1}, entities.ExactInput)
+	assert.NoError(t, err, "can create an exact input trade without simulating with multiple routes")
+
+	r0, _ = NewRoute([]*Pool{pool_0_1}, token0, token1)
+	s0 = &Swap{
+		Route:        r0,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(5001)),
+		OutputAmount: entities.FromRawAmount(token1.Currency, big.NewInt(50000)),
+	}
+	r1, _ = NewRoute([]*Pool{pool_0_2, pool_1_2}, token0, token1)
+	s1 = &Swap{
+		Route:        r1,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(4999)),
+		OutputAmount: entities.FromRawAmount(token1.Currency, big.NewInt(50000)),
+	}
+	_, err = CreateUncheckedTradeWithMultipleRoutes([]*Swap{s0, s1}, entities.ExactOutput)
+	assert.NoError(t, err, "can create an exact output trade without simulating with multiple routes")
+}
+
+func TestRouteSwaps(t *testing.T) {
+	r, _ := NewRoute([]*Pool{pool_0_1, pool_1_2}, token0, token2)
+	singleRoute, _ := CreateUncheckedTrade(r, entities.FromRawAmount(token0.Currency, big.NewInt(100)), entities.FromRawAmount(token2.Currency, big.NewInt(69)), entities.ExactInput)
+
+	r0, _ := NewRoute([]*Pool{pool_0_1, pool_1_2}, token0, token2)
+	s1 := &Swap{
+		Route:        r0,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(50)),
+		OutputAmount: entities.FromRawAmount(token2.Currency, big.NewInt(35)),
+	}
+	r1, _ := NewRoute([]*Pool{pool_0_2}, token0, token2)
+	s2 := &Swap{
+		Route:        r1,
+		InputAmount:  entities.FromRawAmount(token0.Currency, big.NewInt(50)),
+		OutputAmount: entities.FromRawAmount(token2.Currency, big.NewInt(34)),
+	}
+	multiRoute, _ := CreateUncheckedTradeWithMultipleRoutes([]*Swap{s1, s2}, entities.ExactInput)
+
+	// can access route for single route trade if less than 0
+	_, err := singleRoute.Route()
+	assert.NoError(t, err, "can access route for single route trade if less than 0")
+
+	// can access routes for both single and multi route trades
+	assert.Equal(t, len(singleRoute.Swaps), 1, "can access routes for single route trades")
+	assert.Equal(t, len(multiRoute.Swaps), 2, "can access routes for multi route trades")
+
+	_, err = multiRoute.Route()
+	assert.ErrorIs(t, err, ErrTradeHasMultipleRoutes, "if access route on multi route trade")
+}
