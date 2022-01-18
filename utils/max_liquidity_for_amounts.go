@@ -67,7 +67,7 @@ func maxLiquidityForAmount1(sqrtRatioAX96, sqrtRatioBX96, amount1 *big.Int) *big
  * @param useFullPrecision if false, liquidity will be maximized according to what the router can calculate,
  * not what core can theoretically support
  */
-func maxLiquidityForAmounts(sqrtRatioCurrentX96 *big.Int, sqrtRatioAX96, sqrtRatioBX96 *big.Int, amount0, amount1 *big.Int, useFullPrecision bool) *big.Int {
+func MaxLiquidityForAmounts(sqrtRatioCurrentX96 *big.Int, sqrtRatioAX96, sqrtRatioBX96 *big.Int, amount0, amount1 *big.Int, useFullPrecision bool) *big.Int {
 	if sqrtRatioAX96.Cmp(sqrtRatioBX96) > 0 {
 		sqrtRatioAX96, sqrtRatioBX96 = sqrtRatioBX96, sqrtRatioAX96
 	}
