@@ -8,7 +8,7 @@ import (
 	"github.com/daoleno/uniswap-sdk-core/entities"
 )
 
-func Test_maxLiquidityForAmounts(t *testing.T) {
+func TestMaxLiquidityForAmounts(t *testing.T) {
 	type args struct {
 		sqrtRatioCurrentX96 *big.Int
 		sqrtRatioAX96       *big.Int
@@ -244,7 +244,7 @@ func Test_maxLiquidityForAmounts(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := maxLiquidityForAmounts(tt.args.sqrtRatioCurrentX96, tt.args.sqrtRatioAX96, tt.args.sqrtRatioBX96, tt.args.amount0, tt.args.amount1, tt.args.useFullPrecision); !reflect.DeepEqual(got, tt.want) {
+			if got := MaxLiquidityForAmounts(tt.args.sqrtRatioCurrentX96, tt.args.sqrtRatioAX96, tt.args.sqrtRatioBX96, tt.args.amount0, tt.args.amount1, tt.args.useFullPrecision); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("maxLiquidityForAmounts() = %v, want %v", got, tt.want)
 			}
 		})
