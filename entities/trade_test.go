@@ -81,12 +81,12 @@ func v2StylePool(token0, token1 *entities.Token, reserve0, reserve1 *entities.Cu
 	liquidity := new(big.Int).Sqrt(new(big.Int).Mul(reserve0.Quotient(), reserve1.Quotient()))
 	ticks := []Tick{
 		{
-			Index:          NearestUsableTick(utils.MinTick, constants.TickSpaces[feeAmount]),
+			Index:          NearestUsableTick(utils.MinTick, constants.TickSpacings[feeAmount]),
 			LiquidityNet:   liquidity,
 			LiquidityGross: liquidity,
 		},
 		{
-			Index:          NearestUsableTick(utils.MaxTick, constants.TickSpaces[feeAmount]),
+			Index:          NearestUsableTick(utils.MaxTick, constants.TickSpacings[feeAmount]),
 			LiquidityNet:   new(big.Int).Mul(liquidity, big.NewInt(-1)),
 			LiquidityGross: liquidity,
 		},
@@ -95,7 +95,7 @@ func v2StylePool(token0, token1 *entities.Token, reserve0, reserve1 *entities.Cu
 	if err != nil {
 		panic(err)
 	}
-	p, err := NewTickListDataProvider(ticks, constants.TickSpaces[feeAmount])
+	p, err := NewTickListDataProvider(ticks, constants.TickSpacings[feeAmount])
 	if err != nil {
 		panic(err)
 	}

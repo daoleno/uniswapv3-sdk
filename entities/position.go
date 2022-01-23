@@ -122,8 +122,8 @@ func (p *Position) Amount1() (*entities.CurrencyAmount, error) {
  * @returns The sqrt ratios after slippage
  */
 func (p *Position) ratiosAfterSlippage(slippageTolerance *entities.Percent) (sqrtRatioX96Lower *big.Int, sqrtRatioX96Upper *big.Int) {
-	priceLower := p.Pool.token0Price.Fraction.Multiply(entities.NewPercent(big.NewInt(1), big.NewInt(1)).Subtract(slippageTolerance).Fraction)
-	priceUpper := p.Pool.token0Price.Fraction.Multiply(entities.NewPercent(big.NewInt(1), big.NewInt(1)).Add(slippageTolerance).Fraction)
+	priceLower := p.Pool.Token0Price().Fraction.Multiply(entities.NewPercent(big.NewInt(1), big.NewInt(1)).Subtract(slippageTolerance).Fraction)
+	priceUpper := p.Pool.Token0Price().Fraction.Multiply(entities.NewPercent(big.NewInt(1), big.NewInt(1)).Add(slippageTolerance).Fraction)
 	sqrtRatioX96Lower = utils.EncodeSqrtRatioX96(priceLower.Numerator, priceLower.Denominator)
 	if sqrtRatioX96Lower.Cmp(utils.MinSqrtRatio) <= 0 {
 		sqrtRatioX96Lower = new(big.Int).Add(utils.MinSqrtRatio, big.NewInt(1))
@@ -176,7 +176,7 @@ func (p *Position) MintAmountsWithSlippage(slippageTolerance *entities.Percent) 
 
 	// we want the smaller amounts...
 	// ...which occurs at the upper price for amount0...
-	pUpper, err := NewPosition(poolUpper, positionThatWillBeCreated.Liquidity, p.TickUpper, p.TickLower)
+	pUpper, err := NewPosition(poolUpper, positionThatWillBeCreated.Liquidity, p.TickLower, p.TickUpper)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -204,7 +204,7 @@ func (p *Position) MintAmountsWithSlippage(slippageTolerance *entities.Percent) 
  */
 func (p *Position) BurnAmountsWithSlippage(slippageTolerance *entities.Percent) (amount0, amount1 *big.Int, err error) {
 	// get lower/upper prices
-	sqrtRatioX96Upper, sqrtRatioX96Lower := p.ratiosAfterSlippage(slippageTolerance)
+	sqrtRatioX96Lower, sqrtRatioX96Upper := p.ratiosAfterSlippage(slippageTolerance)
 
 	// construct counterfactual pools
 	tickLower, err := utils.GetTickAtSqrtRatio(sqrtRatioX96Lower)
@@ -226,7 +226,7 @@ func (p *Position) BurnAmountsWithSlippage(slippageTolerance *entities.Percent) 
 
 	// we want the smaller amounts...
 	// ...which occurs at the upper price for amount0...
-	pUpper, err := NewPosition(poolUpper, p.Liquidity, p.TickUpper, p.TickLower)
+	pUpper, err := NewPosition(poolUpper, p.Liquidity, p.TickLower, p.TickUpper)
 	if err != nil {
 		return nil, nil, err
 	}

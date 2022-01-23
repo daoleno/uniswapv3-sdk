@@ -326,5 +326,5 @@ func (p *Pool) swap(zeroForOne bool, amountSpecified, sqrtPriceLimitX96 *big.Int
 }
 
 func (p *Pool) tickSpacing() int {
-	return constants.TickSpaces[p.Fee]
+	return constants.TickSpacings[p.Fee]
 }

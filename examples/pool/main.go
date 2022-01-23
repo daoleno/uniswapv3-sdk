@@ -21,19 +21,19 @@ func main() {
 	// create demo ticks
 	ticks := []entities.Tick{
 		{
-			Index:          entities.NearestUsableTick(utils.MinTick, constants.TickSpaces[constants.FeeLow]),
+			Index:          entities.NearestUsableTick(utils.MinTick, constants.TickSpacings[constants.FeeLow]),
 			LiquidityNet:   OneEther,
 			LiquidityGross: OneEther,
 		},
 		{
-			Index:          entities.NearestUsableTick(utils.MaxTick, constants.TickSpaces[constants.FeeLow]),
+			Index:          entities.NearestUsableTick(utils.MaxTick, constants.TickSpacings[constants.FeeLow]),
 			LiquidityNet:   new(big.Int).Mul(OneEther, constants.NegativeOne),
 			LiquidityGross: OneEther,
 		},
 	}
 
 	// create tick data provider
-	p, err := entities.NewTickListDataProvider(ticks, constants.TickSpaces[constants.FeeLow])
+	p, err := entities.NewTickListDataProvider(ticks, constants.TickSpacings[constants.FeeLow])
 	if err != nil {
 		panic(err)
 	}

@@ -115,18 +115,18 @@ func TestInvolvesToken(t *testing.T) {
 func newTestPool() *Pool {
 	ticks := []Tick{
 		{
-			Index:          NearestUsableTick(utils.MinTick, constants.TickSpaces[constants.FeeLow]),
+			Index:          NearestUsableTick(utils.MinTick, constants.TickSpacings[constants.FeeLow]),
 			LiquidityNet:   OneEther,
 			LiquidityGross: OneEther,
 		},
 		{
-			Index:          NearestUsableTick(utils.MaxTick, constants.TickSpaces[constants.FeeLow]),
+			Index:          NearestUsableTick(utils.MaxTick, constants.TickSpacings[constants.FeeLow]),
 			LiquidityNet:   new(big.Int).Mul(OneEther, constants.NegativeOne),
 			LiquidityGross: OneEther,
 		},
 	}
 
-	p, err := NewTickListDataProvider(ticks, constants.TickSpaces[constants.FeeLow])
+	p, err := NewTickListDataProvider(ticks, constants.TickSpacings[constants.FeeLow])
 	if err != nil {
 		panic(err)
 	}
