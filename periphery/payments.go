@@ -51,7 +51,11 @@ func EncodeSweepToken(token *entities.Token, amountMinimum *big.Int, recipient c
 	return abi.Pack("sweepToken", token.Address, amountMinimum, recipient)
 }
 
-func EncodeRefundETH() ([]byte, error) {
+func EncodeRefundETH() []byte {
 	abi := getPaymentsABI()
-	return abi.Pack("refundETH")
+	data, err := abi.Pack("refundETH")
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
