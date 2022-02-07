@@ -1,6 +1,7 @@
 package periphery
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -19,6 +20,7 @@ var nonFungiblePositionManagerABI []byte
 var (
 	ErrZeroLiquidity = errors.New("zero liquidity")
 	ErrNoWETH        = errors.New("no WETH")
+	ErrCannotBurn    = errors.New("cannot burn")
 )
 
 func getNonFungiblePositionManagerABI() abi.ABI {
@@ -69,10 +71,10 @@ type AddLiquidityOptions struct {
 }
 
 type SafeTransferOptions struct {
-	Sender    string   // The account sending the NFT
-	Recipient string   // The account that should receive the NFT
-	TokenID   *big.Int //  The id of the token being sent
-	Data      string   // The optional parameter that passes data to the `onERC721Received` call for the staker
+	Sender    common.Address // The account sending the NFT
+	Recipient common.Address // The account that should receive the NFT
+	TokenID   *big.Int       //  The id of the token being sent
+	Data      []byte         // The optional parameter that passes data to the `onERC721Received` call for the staker
 }
 
 type CollectOptions struct {
@@ -102,8 +104,6 @@ type RemoveLiquidityOptions struct {
 	Permit              *NFTPermitOptions // The optional permit of the token ID being exited, in case the exit transaction is being sent by an account that does not own the NFT
 	CollectOptions      *CollectOptions   // Parameters to be passed on to collect
 }
-
-type NonFungiblePositionManager struct{}
 
 func encodeCreate(pool *entities.Pool) ([]byte, error) {
 	abi := getNonFungiblePositionManagerABI()
@@ -302,44 +302,105 @@ func CollectCallParameters(opts *CollectOptions) (*utils.MethodParameters, error
  * @param options Additional information necessary for generating the calldata
  * @returns The call parameters
  */
-// func RemoveCallParameters(position *entities.Position, opts *RemoveLiquidityOptions) (*utils.MethodParameters, error) {
-// 	var calldatas [][]byte
+func RemoveCallParameters(position *entities.Position, opts *RemoveLiquidityOptions) (*utils.MethodParameters, error) {
+	var calldatas [][]byte
 
-// 	// construct a partial position with a percentage of liquidity
-// 	partialPosition, err := entities.NewPosition(
-// 		position.Pool,
-// 		opts.LiquidityPercentage.Multiply(core.NewPercent(position.Liquidity, big.NewInt(1))).Quotient(),
-// 		position.TickLower,
-// 		position.TickUpper,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	// construct a partial position with a percentage of liquidity
+	partialPosition, err := entities.NewPosition(
+		position.Pool,
+		opts.LiquidityPercentage.Multiply(core.NewPercent(position.Liquidity, big.NewInt(1))).Quotient(),
+		position.TickLower,
+		position.TickUpper,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-// 	if partialPosition.Liquidity.Cmp(constants.Zero) <= 0 {
-// 		return nil, ErrZeroLiquidity
-// 	}
+	if partialPosition.Liquidity.Cmp(constants.Zero) <= 0 {
+		return nil, ErrZeroLiquidity
+	}
 
-// 	// slippage-adjusted underlying amounts
-// 	amount0Min, amount1Min, err := partialPosition.BurnAmountsWithSlippage(opts.SlippageTolerance)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	// slippage-adjusted underlying amounts
+	amount0Min, amount1Min, err := partialPosition.BurnAmountsWithSlippage(opts.SlippageTolerance)
+	if err != nil {
+		return nil, err
+	}
 
-// 	abi := getNonFungiblePositionManagerABI()
-// 	if opts.Permit != nil {
-// 		calldata, err := abi.Pack("permit", opts.Permit.Spender, opts.TokenID, opts.Permit.Deadline, opts.Permit.V, opts.Permit.R, opts.Permit.S)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		calldatas = append(calldatas, calldata)
-// 	}
+	abi := getNonFungiblePositionManagerABI()
+	if opts.Permit != nil {
+		calldata, err := abi.Pack("permit", opts.Permit.Spender, opts.TokenID, opts.Permit.Deadline, opts.Permit.V, opts.Permit.R, opts.Permit.S)
+		if err != nil {
+			return nil, err
+		}
+		calldatas = append(calldatas, calldata)
+	}
 
-// 	// remove liquidity
-// 	calldata, err := abi.Pack("decreaseLiquidity", opts.TokenID, partialPosition.Liquidity, amount0Min, amount1Min, opts.Deadline)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	calldatas = append(calldatas, calldata)
+	// remove liquidity
+	calldata, err := abi.Pack("decreaseLiquidity", opts.TokenID, partialPosition.Liquidity, amount0Min, amount1Min, opts.Deadline)
+	if err != nil {
+		return nil, err
+	}
+	calldatas = append(calldatas, calldata)
 
-// }
+	collectOpts := &CollectOptions{
+		TokenID: opts.TokenID,
+		// add the underlying value to the expected currency already owed
+		ExpectedCurrencyOwed0: opts.CollectOptions.ExpectedCurrencyOwed0.Add(core.FromRawAmount(opts.CollectOptions.ExpectedCurrencyOwed0.Currency, amount0Min)),
+		ExpectedCurrencyOwed1: opts.CollectOptions.ExpectedCurrencyOwed1.Add(core.FromRawAmount(opts.CollectOptions.ExpectedCurrencyOwed1.Currency, amount1Min)),
+		ExpectedTokenOwed0:    opts.CollectOptions.ExpectedTokenOwed0,
+		ExpectedTokenOwed1:    opts.CollectOptions.ExpectedTokenOwed1,
+		Recipient:             opts.CollectOptions.Recipient,
+	}
+	collectdata, err := encodeCollect(collectOpts)
+	if err != nil {
+		return nil, err
+	}
+	calldatas = append(calldatas, collectdata...)
+
+	if opts.LiquidityPercentage.EqualTo(core.NewFraction(constants.One, big.NewInt(1))) {
+		if opts.BurnToken {
+			calldata, err := abi.Pack("burn", opts.TokenID)
+			if err != nil {
+				return nil, err
+			}
+			calldatas = append(calldatas, calldata)
+		}
+	} else {
+		if !opts.BurnToken {
+			return nil, ErrCannotBurn
+		}
+	}
+
+	data, err := EncodeMulticall(calldatas)
+	if err != nil {
+		return nil, err
+	}
+	return &utils.MethodParameters{
+		Calldata: data,
+		Value:    constants.Zero,
+	}, nil
+}
+
+func SafeTransferFromParameters(opts *SafeTransferOptions) (*utils.MethodParameters, error) {
+	abi := getNonFungiblePositionManagerABI()
+
+	var (
+		calldata []byte
+		err      error
+	)
+	if opts.Data != nil {
+		calldata, err = abi.Pack("safeTransferFrom(address,address,uint256,bytes)", opts.Sender, opts.Recipient, opts.TokenID, opts.Data)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		calldata, err = abi.Pack("safeTransferFrom(address,address,uint256)", opts.Sender, opts.Recipient, opts.TokenID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &utils.MethodParameters{
+		Calldata: calldata,
+		Value:    constants.Zero,
+	}, nil
+}
