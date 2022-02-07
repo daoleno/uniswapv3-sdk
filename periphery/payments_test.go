@@ -46,7 +46,6 @@ func TestEncodeSweepToken(t *testing.T) {
 
 func TestEncodeRefundETH(t *testing.T) {
 	// works without feeOptions
-	calldata, err := EncodeRefundETH()
-	assert.NoError(t, err)
+	calldata := EncodeRefundETH()
 	assert.Equal(t, "0x12210e8a", hexutil.Encode(calldata))
 }
