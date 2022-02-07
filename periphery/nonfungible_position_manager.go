@@ -59,6 +59,20 @@ type MintOptions struct {
 	*MintSpecificOptions
 }
 
+type MintParams struct {
+	Token0         common.Address
+	Token1         common.Address
+	Fee            *big.Int
+	TickLower      *big.Int
+	TickUpper      *big.Int
+	Amount0Desired *big.Int
+	Amount1Desired *big.Int
+	Amount0Min     *big.Int
+	Amount1Min     *big.Int
+	Recipient      common.Address
+	Deadline       *big.Int
+}
+
 type IncreaseOptions struct {
 	*CommonAddLiquidityOptions
 	*IncreaseSpecificOptions
@@ -107,7 +121,7 @@ type RemoveLiquidityOptions struct {
 
 func encodeCreate(pool *entities.Pool) ([]byte, error) {
 	abi := getNonFungiblePositionManagerABI()
-	return abi.Pack("createAndInitializePoolIfNecessary", pool.Token0.Address, pool.Token1.Address, pool.Fee, pool.SqrtRatioX96)
+	return abi.Pack("createAndInitializePoolIfNecessary", pool.Token0.Address, pool.Token1.Address, big.NewInt(int64(pool.Fee)), pool.SqrtRatioX96)
 }
 
 func CreateCallParameters(pool *entities.Pool) (*utils.MethodParameters, error) {
@@ -169,19 +183,19 @@ func AddCallParameters(position *entities.Position, opts *AddLiquidityOptions) (
 
 	// mint
 	if opts.MintSpecificOptions != nil {
-		calldata, err := abi.Pack("mint",
-			position.Pool.Token0.Address,
-			position.Pool.Token1.Address,
-			position.Pool.Fee,
-			position.TickLower,
-			position.TickUpper,
-			amount0Desired,
-			amount1Desired,
-			amount0Min,
-			amount1Min,
-			opts.Recipient,
-			opts.Deadline,
-		)
+		calldata, err := abi.Pack("mint", &MintParams{
+			Token0:         position.Pool.Token0.Address,
+			Token1:         position.Pool.Token1.Address,
+			Fee:            big.NewInt(int64(position.Pool.Fee)),
+			TickLower:      big.NewInt(int64(position.TickLower)),
+			TickUpper:      big.NewInt(int64(position.TickUpper)),
+			Amount0Desired: amount0Desired,
+			Amount1Desired: amount1Desired,
+			Amount0Min:     amount0Min,
+			Amount1Min:     amount1Min,
+			Recipient:      opts.Recipient,
+			Deadline:       opts.Deadline,
+		})
 		if err != nil {
 			return nil, err
 		}
