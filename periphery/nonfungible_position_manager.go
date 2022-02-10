@@ -59,20 +59,6 @@ type MintOptions struct {
 	*MintSpecificOptions
 }
 
-type MintParams struct {
-	Token0         common.Address
-	Token1         common.Address
-	Fee            *big.Int
-	TickLower      *big.Int
-	TickUpper      *big.Int
-	Amount0Desired *big.Int
-	Amount1Desired *big.Int
-	Amount0Min     *big.Int
-	Amount1Min     *big.Int
-	Recipient      common.Address
-	Deadline       *big.Int
-}
-
 type IncreaseOptions struct {
 	*CommonAddLiquidityOptions
 	*IncreaseSpecificOptions
@@ -117,6 +103,44 @@ type RemoveLiquidityOptions struct {
 	BurnToken           bool              // Whether the NFT should be burned if the entire position is being exited, by default false
 	Permit              *NFTPermitOptions // The optional permit of the token ID being exited, in case the exit transaction is being sent by an account that does not own the NFT
 	CollectOptions      *CollectOptions   // Parameters to be passed on to collect
+}
+
+type MintParams struct {
+	Token0         common.Address
+	Token1         common.Address
+	Fee            *big.Int
+	TickLower      *big.Int
+	TickUpper      *big.Int
+	Amount0Desired *big.Int
+	Amount1Desired *big.Int
+	Amount0Min     *big.Int
+	Amount1Min     *big.Int
+	Recipient      common.Address
+	Deadline       *big.Int
+}
+
+type IncreaseLiquidityParams struct {
+	TokenId        *big.Int
+	Amount0Desired *big.Int
+	Amount1Desired *big.Int
+	Amount0Min     *big.Int
+	Amount1Min     *big.Int
+	Deadline       *big.Int
+}
+
+type CollectParams struct {
+	TokenId    *big.Int
+	Recipient  common.Address
+	Amount0Max *big.Int
+	Amount1Max *big.Int
+}
+
+type DecreaseLiquidityParams struct {
+	TokenId    *big.Int
+	Liquidity  *big.Int
+	Amount0Min *big.Int
+	Amount1Min *big.Int
+	Deadline   *big.Int
 }
 
 func encodeCreate(pool *entities.Pool) ([]byte, error) {
@@ -204,14 +228,14 @@ func AddCallParameters(position *entities.Position, opts *AddLiquidityOptions) (
 
 	// increase
 	if opts.IncreaseSpecificOptions != nil {
-		calldata, err := abi.Pack("increaseLiquidity",
-			opts.TokenID,
-			amount0Desired,
-			amount1Desired,
-			amount0Min,
-			amount1Min,
-			opts.Deadline,
-		)
+		calldata, err := abi.Pack("increaseLiquidity", &IncreaseLiquidityParams{
+			TokenId:        opts.TokenID,
+			Amount0Desired: amount0Desired,
+			Amount1Desired: amount1Desired,
+			Amount0Min:     amount0Min,
+			Amount1Min:     amount1Min,
+			Deadline:       opts.Deadline,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -258,7 +282,12 @@ func encodeCollect(opts *CollectOptions) ([][]byte, error) {
 	if involvesETH {
 		collectRecipent = constants.AddressZero
 	}
-	calldata, err := abi.Pack("collect", opts.TokenID, collectRecipent, MaxUint128, MaxUint128)
+	calldata, err := abi.Pack("collect", &CollectParams{
+		TokenId:    opts.TokenID,
+		Recipient:  collectRecipent,
+		Amount0Max: MaxUint128,
+		Amount1Max: MaxUint128,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +379,12 @@ func RemoveCallParameters(position *entities.Position, opts *RemoveLiquidityOpti
 	}
 
 	// remove liquidity
-	calldata, err := abi.Pack("decreaseLiquidity", opts.TokenID, partialPosition.Liquidity, amount0Min, amount1Min, opts.Deadline)
+	calldata, err := abi.Pack("decreaseLiquidity", &DecreaseLiquidityParams{
+		TokenId:    opts.TokenID,
+		Liquidity:  partialPosition.Liquidity,
+		Amount0Min: amount0Min,
+		Amount1Min: amount1Min,
+		Deadline:   opts.Deadline})
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +414,7 @@ func RemoveCallParameters(position *entities.Position, opts *RemoveLiquidityOpti
 			calldatas = append(calldatas, calldata)
 		}
 	} else {
-		if !opts.BurnToken {
+		if opts.BurnToken {
 			return nil, ErrCannotBurn
 		}
 	}
@@ -403,12 +437,12 @@ func SafeTransferFromParameters(opts *SafeTransferOptions) (*utils.MethodParamet
 		err      error
 	)
 	if opts.Data != nil {
-		calldata, err = abi.Pack("safeTransferFrom(address,address,uint256,bytes)", opts.Sender, opts.Recipient, opts.TokenID, opts.Data)
+		calldata, err = abi.Pack("safeTransferFrom0", opts.Sender, opts.Recipient, opts.TokenID, opts.Data)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		calldata, err = abi.Pack("safeTransferFrom(address,address,uint256)", opts.Sender, opts.Recipient, opts.TokenID)
+		calldata, err = abi.Pack("safeTransferFrom", opts.Sender, opts.Recipient, opts.TokenID)
 		if err != nil {
 			return nil, err
 		}
