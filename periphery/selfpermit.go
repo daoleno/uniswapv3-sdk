@@ -18,17 +18,17 @@ var (
 )
 
 type StandardPermitArguments struct {
-	V        uint
-	R        string
-	S        string
+	V        uint8
+	R        [32]byte
+	S        [32]byte
 	Amount   *big.Int
 	Deadline *big.Int
 }
 
 type AllowedPermitArguments struct {
-	V      uint
-	R      string
-	S      string
+	V      uint8
+	R      [32]byte
+	S      [32]byte
 	Nonce  *big.Int
 	Expiry *big.Int
 }
