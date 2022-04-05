@@ -392,18 +392,21 @@ func newTrade(routes []*Swap, tradeType entities.TradeType) (*Trade, error) {
  * @param slippageTolerance The tolerance of unfavorable slippage from the execution price of this trade
  * @returns The amount out
  */
-func (t *Trade) MinimumAmountOut(slippageTolerance *entities.Percent) (*entities.CurrencyAmount, error) {
+func (t *Trade) MinimumAmountOut(slippageTolerance *entities.Percent, amountOut *entities.CurrencyAmount) (*entities.CurrencyAmount, error) {
+	if amountOut == nil {
+		amountOut = t.OutputAmount()
+	}
 	if slippageTolerance.LessThan(constants.PercentZero) {
 		return nil, ErrInvalidSlippageTolerance
 	}
 	if t.TradeType == entities.ExactOutput {
-		return t.OutputAmount(), nil
+		return amountOut, nil
 	} else {
 		slippageAdjustedAmountOut := entities.NewFraction(big.NewInt(1), big.NewInt(1)).
 			Add(slippageTolerance.Fraction).
 			Invert().
-			Multiply(t.OutputAmount().Fraction).Quotient()
-		return entities.FromRawAmount(t.OutputAmount().Currency, slippageAdjustedAmountOut), nil
+			Multiply(amountOut.Fraction).Quotient()
+		return entities.FromRawAmount(amountOut.Currency, slippageAdjustedAmountOut), nil
 	}
 }
 
@@ -412,17 +415,20 @@ func (t *Trade) MinimumAmountOut(slippageTolerance *entities.Percent) (*entities
  * @param slippageTolerance The tolerance of unfavorable slippage from the execution price of this trade
  * @returns The amount in
  */
-func (t *Trade) MaximumAmountIn(slippageTolerance *entities.Percent) (*entities.CurrencyAmount, error) {
+func (t *Trade) MaximumAmountIn(slippageTolerance *entities.Percent, amountIn *entities.CurrencyAmount) (*entities.CurrencyAmount, error) {
+	if amountIn == nil {
+		amountIn = t.InputAmount()
+	}
 	if slippageTolerance.LessThan(constants.PercentZero) {
 		return nil, ErrInvalidSlippageTolerance
 	}
 	if t.TradeType == entities.ExactInput {
-		return t.InputAmount(), nil
+		return amountIn, nil
 	} else {
 		slippageAdjustedAmountIn := entities.NewFraction(big.NewInt(1), big.NewInt(1)).
 			Add(slippageTolerance.Fraction).
-			Multiply(t.InputAmount().Fraction).Quotient()
-		return entities.FromRawAmount(t.InputAmount().Currency, slippageAdjustedAmountIn), nil
+			Multiply(amountIn.Fraction).Quotient()
+		return entities.FromRawAmount(amountIn.Currency, slippageAdjustedAmountIn), nil
 	}
 }
 
@@ -432,11 +438,11 @@ func (t *Trade) MaximumAmountIn(slippageTolerance *entities.Percent) (*entities.
  * @returns The execution price
  */
 func (t *Trade) WorstExecutionPrice(slippageTolerance *entities.Percent) (*entities.Price, error) {
-	maxAmountIn, err := t.MaximumAmountIn(slippageTolerance)
+	maxAmountIn, err := t.MaximumAmountIn(slippageTolerance, nil)
 	if err != nil {
 		return nil, err
 	}
-	minAmountOut, err := t.MinimumAmountOut(slippageTolerance)
+	minAmountOut, err := t.MinimumAmountOut(slippageTolerance, nil)
 	if err != nil {
 		return nil, err
 	}

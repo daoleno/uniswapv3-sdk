@@ -320,7 +320,7 @@ func TestWorstExecutionPrice(t *testing.T) {
 		},
 	}, entities.ExactInput)
 
-	_, err := exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(-1), big.NewInt(100)))
+	_, err := exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(-1), big.NewInt(100)), nil)
 	assert.ErrorIs(t, err, ErrInvalidSlippageTolerance, "throws if less than 0")
 
 	price, _ := exactIn.WorstExecutionPrice(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
@@ -518,35 +518,35 @@ func TestMaximumAmountIn(t *testing.T) {
 	// tradeType = EXACT_INPUT
 	exactIn, _ := FromRoute(r, entities.FromRawAmount(token0.Currency, big.NewInt(100)), entities.ExactInput)
 
-	_, err := exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(-1), big.NewInt(100)))
+	_, err := exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(-1), big.NewInt(100)), nil)
 	assert.ErrorIs(t, err, ErrInvalidSlippageTolerance, "throws if less than 0")
 
-	amountIn, _ := exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
+	amountIn, _ := exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(100)), nil)
 	assert.Equal(t, amountIn, exactIn.InputAmount(), "returns exact if 0")
 
 	// returns exact if nonzero
-	amountIn, _ = exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
+	amountIn, _ = exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(100)), nil)
 	assert.True(t, amountIn.EqualTo(entities.FromRawAmount(token0.Currency, big.NewInt(100)).Fraction))
-	amountIn, _ = exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(5), big.NewInt(100)))
+	amountIn, _ = exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(5), big.NewInt(100)), nil)
 	assert.True(t, amountIn.EqualTo(entities.FromRawAmount(token0.Currency, big.NewInt(100)).Fraction))
-	amountIn, _ = exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(200), big.NewInt(100)))
+	amountIn, _ = exactIn.MaximumAmountIn(entities.NewPercent(big.NewInt(200), big.NewInt(100)), nil)
 	assert.True(t, amountIn.EqualTo(entities.FromRawAmount(token0.Currency, big.NewInt(100)).Fraction))
 
 	// tradeType = EXACT_OUTPUT
 	exactOut, _ := FromRoute(r, entities.FromRawAmount(token2.Currency, big.NewInt(10000)), entities.ExactOutput)
 
-	_, err = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(-1), big.NewInt(10000)))
+	_, err = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(-1), big.NewInt(10000)), nil)
 	assert.ErrorIs(t, err, ErrInvalidSlippageTolerance, "throws if less than 0")
 
-	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(10000)))
+	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(10000)), nil)
 	assert.Equal(t, amountIn, exactOut.InputAmount(), "returns exact if 0")
 
 	// returns slippage amount if nonzero
-	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
+	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(0), big.NewInt(100)), nil)
 	assert.True(t, amountIn.EqualTo(entities.FromRawAmount(token0.Currency, big.NewInt(15488)).Fraction))
-	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(5), big.NewInt(100)))
+	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(5), big.NewInt(100)), nil)
 	assert.True(t, amountIn.EqualTo(entities.FromRawAmount(token0.Currency, big.NewInt(16262)).Fraction))
-	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(200), big.NewInt(100)))
+	amountIn, _ = exactOut.MaximumAmountIn(entities.NewPercent(big.NewInt(200), big.NewInt(100)), nil)
 	assert.True(t, amountIn.EqualTo(entities.FromRawAmount(token0.Currency, big.NewInt(46464)).Fraction))
 }
 
@@ -556,35 +556,35 @@ func TestMinimumAmountOut(t *testing.T) {
 	// tradeType = EXACT_INPUT
 	exactIn, _ := FromRoute(r, entities.FromRawAmount(token0.Currency, big.NewInt(10000)), entities.ExactInput)
 
-	_, err := exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(-1), big.NewInt(100)))
+	_, err := exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(-1), big.NewInt(100)), nil)
 	assert.ErrorIs(t, err, ErrInvalidSlippageTolerance, "throws if less than 0")
 
-	amountOut, _ := exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(10000)))
+	amountOut, _ := exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(10000)), nil)
 	assert.Equal(t, amountOut, exactIn.OutputAmount(), "returns exact if 0")
 
 	// returns exact if nonzero
-	amountOut, _ = exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
+	amountOut, _ = exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(100)), nil)
 	assert.True(t, amountOut.EqualTo(entities.FromRawAmount(token2.Currency, big.NewInt(7004)).Fraction))
-	amountOut, _ = exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(5), big.NewInt(100)))
+	amountOut, _ = exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(5), big.NewInt(100)), nil)
 	assert.True(t, amountOut.EqualTo(entities.FromRawAmount(token2.Currency, big.NewInt(6670)).Fraction))
-	amountOut, _ = exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(200), big.NewInt(100)))
+	amountOut, _ = exactIn.MinimumAmountOut(entities.NewPercent(big.NewInt(200), big.NewInt(100)), nil)
 	assert.True(t, amountOut.EqualTo(entities.FromRawAmount(token2.Currency, big.NewInt(2334)).Fraction))
 
 	// tradeType = EXACT_OUTPUT
 	exactOut, _ := FromRoute(r, entities.FromRawAmount(token2.Currency, big.NewInt(100)), entities.ExactOutput)
 
-	_, err = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(-1), big.NewInt(100)))
+	_, err = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(-1), big.NewInt(100)), nil)
 	assert.ErrorIs(t, err, ErrInvalidSlippageTolerance, "throws if less than 0")
 
-	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
+	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(100)), nil)
 	assert.Equal(t, amountOut, exactOut.OutputAmount(), "returns exact if 0")
 
 	// returns slippage amount if nonzero
-	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(100)))
+	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(0), big.NewInt(100)), nil)
 	assert.True(t, amountOut.EqualTo(entities.FromRawAmount(token2.Currency, big.NewInt(100)).Fraction))
-	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(5), big.NewInt(100)))
+	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(5), big.NewInt(100)), nil)
 	assert.True(t, amountOut.EqualTo(entities.FromRawAmount(token2.Currency, big.NewInt(100)).Fraction))
-	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(200), big.NewInt(100)))
+	amountOut, _ = exactOut.MinimumAmountOut(entities.NewPercent(big.NewInt(200), big.NewInt(100)), nil)
 	assert.True(t, amountOut.EqualTo(entities.FromRawAmount(token2.Currency, big.NewInt(100)).Fraction))
 }
 
