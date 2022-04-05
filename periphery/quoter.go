@@ -10,6 +10,7 @@ import (
 
 	core "github.com/daoleno/uniswap-sdk-core/entities"
 	"github.com/daoleno/uniswapv3-sdk/entities"
+	"github.com/daoleno/uniswapv3-sdk/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -48,38 +49,55 @@ func getQuoterABI() abi.ABI {
  * @param tradeType The trade type, either exact input or exact output
  * @returns The formatted calldata
  */
-// func quoteCallParameters(route *entities.Route, amount *core.CurrencyAmount, tradeType core.TradeType, options *QuoteOptions) (*utils.MethodParameters, error) {
-// 	singleHop := len(route.Pools) == 1
-// 	quoteAmount := utils.ToHex(amount.Quotient())
-// 	abi := getPaymentsABI()
+func QuoteCallParameters(
+	route *entities.Route,
+	amount *core.CurrencyAmount,
+	tradeType core.TradeType,
+	options *QuoteOptions,
+) (*utils.MethodParameters, error) {
+	singleHop := len(route.Pools) == 1
+	quoteAmount := amount.Quotient()
+	abi := getQuoterABI()
+	var (
+		calldata []byte
+		err      error
+	)
+	sqrtPriceLimitX96 := big.NewInt(0)
+	if options != nil {
+		sqrtPriceLimitX96 = options.SqrtPriceLimitX96
+	}
 
-// 	var (
-// 		calldata []byte
-// 		err      error
-// 	)
-
-// 	if singleHop {
-// 		splx96 := big.NewInt(0)
-// 		if options.SqrtPriceLimitX96 != nil {
-// 			splx96 = options.SqrtPriceLimitX96
-// 		}
-// 		if tradeType == core.ExactInput {
-// 			calldata, err = abi.Pack("quoteExactInputSingle", route.TokenPath[0].Address, route.TokenPath[1].Address, route.Pools[0].Fee, quoteAmount, utils.ToHex(splx96))
-// 		} else {
-// 			calldata, err = abi.Pack("quoteExactOutputSingle", route.TokenPath[0].Address, route.TokenPath[1].Address, route.Pools[0].Fee, quoteAmount, utils.ToHex(splx96))
-// 		}
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	} else {
-// 		if options.SqrtPriceLimitX96 != nil {
-// 			return nil, ErrMultihopPriceLimit
-// 		}
-// 		path := encodeRout
-
-// 	}
-
-// }
+	if singleHop {
+		if tradeType == core.ExactInput {
+			calldata, err = abi.Pack("quoteExactInputSingle", route.TokenPath[0].Address, route.TokenPath[1].Address, big.NewInt(int64(route.Pools[0].Fee)), quoteAmount, sqrtPriceLimitX96)
+		} else {
+			calldata, err = abi.Pack("quoteExactOutputSingle", route.TokenPath[0].Address, route.TokenPath[1].Address, big.NewInt(int64(route.Pools[0].Fee)), quoteAmount, sqrtPriceLimitX96)
+		}
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if options != nil && sqrtPriceLimitX96 != big.NewInt(0) {
+			return nil, ErrMultihopPriceLimit
+		}
+		path, err := EncodeRouteToPath(route, tradeType == core.ExactOutput)
+		if err != nil {
+			return nil, err
+		}
+		if tradeType == core.ExactInput {
+			calldata, err = abi.Pack("quoteExactInput", path, quoteAmount)
+		} else {
+			calldata, err = abi.Pack("quoteExactOutput", path, quoteAmount)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &utils.MethodParameters{
+		Calldata: calldata,
+		Value:    big.NewInt(0),
+	}, nil
+}
 
 /**
  * Converts a route to a hex encoded path

@@ -15,6 +15,10 @@ type MethodParameters struct {
  * @returns The hex encoded calldata
  */
 func ToHex(i *big.Int) string {
+	if i == nil {
+		return "0x00"
+	}
+
 	hex := i.String()
 	if len(hex)%2 != 0 {
 		hex = "0" + hex
