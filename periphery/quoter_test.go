@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	core "github.com/daoleno/uniswap-sdk-core/entities"
-	"github.com/daoleno/uniswapv3-sdk/constants"
 	"github.com/daoleno/uniswapv3-sdk/entities"
 	"github.com/daoleno/uniswapv3-sdk/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -63,27 +62,8 @@ func TestEncodeRouteToPath(t *testing.T) {
 }
 
 func TestQuoteCallParameters(t *testing.T) {
-	feeAmount := constants.FeeMedium
-	sqrtRatioX96 := utils.EncodeSqrtRatioX96(big.NewInt(1), big.NewInt(1))
-	liquidity := big.NewInt(1_000_000)
-	WETH := core.WETH9[1]
-	tick, _ := utils.GetTickAtSqrtRatio(sqrtRatioX96)
-	ticks := []entities.Tick{
-		{
-			Index:          entities.NearestUsableTick(utils.MinTick, constants.TickSpacings[feeAmount]),
-			LiquidityNet:   liquidity,
-			LiquidityGross: liquidity,
-		},
-		{
-			Index:          entities.NearestUsableTick(utils.MaxTick, constants.TickSpacings[feeAmount]),
-			LiquidityNet:   new(big.Int).Mul(liquidity, constants.NegativeOne),
-			LiquidityGross: liquidity,
-		},
-	}
-
-	p, _ := entities.NewTickListDataProvider(ticks, constants.TickSpacings[feeAmount])
-	pool_0_1, _ := entities.NewPool(token0, token1, feeAmount, sqrtRatioX96, liquidity, tick, p)
-	pool_1_weth, _ := entities.NewPool(token1, WETH, feeAmount, sqrtRatioX96, liquidity, tick, p)
+	pool_0_1 := makePool(token0, token1)
+	pool_1_weth := makePool(token1, weth)
 
 	// single trade input
 	// single-hop exact input
@@ -107,7 +87,7 @@ func TestQuoteCallParameters(t *testing.T) {
 	assert.Equal(t, "0x00", utils.ToHex(params.Value))
 
 	// multi-hop exact input
-	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, WETH)
+	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, weth)
 	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0.Currency, big.NewInt(100)), core.ExactInput)
 	route, _ := trade.Route()
 	params, err = QuoteCallParameters(route, trade.InputAmount(), trade.TradeType, nil)
@@ -118,8 +98,8 @@ func TestQuoteCallParameters(t *testing.T) {
 	assert.Equal(t, "0x00", utils.ToHex(params.Value))
 
 	// multi-hop exact output
-	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, WETH)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(WETH.Currency, big.NewInt(100)), core.ExactOutput)
+	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, weth)
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(weth.Currency, big.NewInt(100)), core.ExactOutput)
 	route, _ = trade.Route()
 	params, err = QuoteCallParameters(route, trade.OutputAmount(), trade.TradeType, nil)
 	if err != nil {

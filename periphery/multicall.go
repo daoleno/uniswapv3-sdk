@@ -18,17 +18,20 @@ func EncodeMulticall(calldatas [][]byte) ([]byte, error) {
 	if len(calldatas) == 1 {
 		return calldatas[0], nil
 	}
-
-	var wabi WrappedABI
-	err := json.Unmarshal(multicallABI, &wabi)
-	if err != nil {
-		return nil, err
-	}
-
-	b, err := wabi.ABI.Pack("multicall", calldatas)
+	abi := GetABI(multicallABI)
+	b, err := abi.Pack("multicall", calldatas)
 	if err != nil {
 		return nil, err
 	}
 
 	return b, nil
+}
+
+func GetABI(abi []byte) abi.ABI {
+	var wabi WrappedABI
+	err := json.Unmarshal(abi, &wabi)
+	if err != nil {
+		panic(err)
+	}
+	return wabi.ABI
 }

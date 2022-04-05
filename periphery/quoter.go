@@ -2,7 +2,6 @@ package periphery
 
 import (
 	_ "embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -11,7 +10,6 @@ import (
 	core "github.com/daoleno/uniswap-sdk-core/entities"
 	"github.com/daoleno/uniswapv3-sdk/entities"
 	"github.com/daoleno/uniswapv3-sdk/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -29,15 +27,6 @@ type QuoteOptions struct {
  * Represents the Uniswap V3 QuoterV1 contract with a method for returning the formatted
  * calldata needed to call the quoter contract.
  */
-
-func getQuoterABI() abi.ABI {
-	var wabi WrappedABI
-	err := json.Unmarshal(quoterABI, &wabi)
-	if err != nil {
-		panic(err)
-	}
-	return wabi.ABI
-}
 
 /**
  * Produces the on-chain method name of the appropriate function within QuoterV2,
@@ -57,7 +46,7 @@ func QuoteCallParameters(
 ) (*utils.MethodParameters, error) {
 	singleHop := len(route.Pools) == 1
 	quoteAmount := amount.Quotient()
-	abi := getQuoterABI()
+	abi := GetABI(quoterABI)
 	var (
 		calldata []byte
 		err      error

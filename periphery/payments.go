@@ -2,11 +2,9 @@ package periphery
 
 import (
 	_ "embed"
-	"encoding/json"
 	"math/big"
 
 	"github.com/daoleno/uniswap-sdk-core/entities"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -23,17 +21,8 @@ func encodeFeeBips(fee *entities.Percent) *big.Int {
 	return fee.Multiply(entities.NewPercent(big.NewInt(10000), big.NewInt(1))).Quotient()
 }
 
-func getPaymentsABI() abi.ABI {
-	var wabi WrappedABI
-	err := json.Unmarshal(paymentsABI, &wabi)
-	if err != nil {
-		panic(err)
-	}
-	return wabi.ABI
-}
-
 func EncodeUnwrapWETH9(amountMinimum *big.Int, recipient common.Address, feeOptions *FeeOptions) ([]byte, error) {
-	abi := getPaymentsABI()
+	abi := GetABI(paymentsABI)
 	if feeOptions != nil {
 		return abi.Pack("unwrapWETH9WithFee", amountMinimum, &recipient, encodeFeeBips(feeOptions.Fee), feeOptions.Recipient)
 	}
@@ -42,7 +31,7 @@ func EncodeUnwrapWETH9(amountMinimum *big.Int, recipient common.Address, feeOpti
 }
 
 func EncodeSweepToken(token *entities.Token, amountMinimum *big.Int, recipient common.Address, feeOptions *FeeOptions) ([]byte, error) {
-	abi := getPaymentsABI()
+	abi := GetABI(paymentsABI)
 
 	if feeOptions != nil {
 		return abi.Pack("sweepTokenWithFee", token.Address, amountMinimum, recipient, encodeFeeBips(feeOptions.Fee), feeOptions.Recipient)
@@ -52,7 +41,7 @@ func EncodeSweepToken(token *entities.Token, amountMinimum *big.Int, recipient c
 }
 
 func EncodeRefundETH() []byte {
-	abi := getPaymentsABI()
+	abi := GetABI(paymentsABI)
 	data, err := abi.Pack("refundETH")
 	if err != nil {
 		panic(err)

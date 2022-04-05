@@ -158,9 +158,9 @@ func TestCollectCallParameters(t *testing.T) {
 	opts = &CollectOptions{
 		TokenID:               tokenIDT,
 		ExpectedCurrencyOwed0: core.FromRawAmount(token1T.Currency, big.NewInt(0)),
-		ExpectedCurrencyOwed1: core.FromRawAmount(core.WETH9[1].Currency, big.NewInt(0)),
+		ExpectedCurrencyOwed1: core.FromRawAmount(ether.Currency, big.NewInt(0)),
 		ExpectedTokenOwed0:    token1T,
-		ExpectedTokenOwed1:    core.WETH9[1],
+		ExpectedTokenOwed1:    ether,
 		Recipient:             recipientT,
 	}
 	params, err = CollectCallParameters(opts)
