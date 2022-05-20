@@ -68,7 +68,7 @@ func TestQuoteCallParameters(t *testing.T) {
 	// single trade input
 	// single-hop exact input
 	r, _ := entities.NewRoute([]*entities.Pool{pool_0_1}, token0, token1)
-	trade, _ := entities.FromRoute(r, core.FromRawAmount(token0.Currency, big.NewInt(100)), core.ExactInput)
+	trade, _ := entities.FromRoute(r, core.FromRawAmount(token0, big.NewInt(100)), core.ExactInput)
 	params, err := QuoteCallParameters(trade.Swaps[0].Route, trade.InputAmount(), trade.TradeType, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestQuoteCallParameters(t *testing.T) {
 
 	// single-hop exact output
 	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1}, token0, token1)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(token1.Currency, big.NewInt(100)), core.ExactOutput)
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(token1, big.NewInt(100)), core.ExactOutput)
 	params, err = QuoteCallParameters(trade.Swaps[0].Route, trade.OutputAmount(), trade.TradeType, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +88,7 @@ func TestQuoteCallParameters(t *testing.T) {
 
 	// multi-hop exact input
 	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, weth)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0.Currency, big.NewInt(100)), core.ExactInput)
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0, big.NewInt(100)), core.ExactInput)
 	route, _ := trade.Route()
 	params, err = QuoteCallParameters(route, trade.InputAmount(), trade.TradeType, nil)
 	if err != nil {
@@ -99,7 +99,7 @@ func TestQuoteCallParameters(t *testing.T) {
 
 	// multi-hop exact output
 	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, weth)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(weth.Currency, big.NewInt(100)), core.ExactOutput)
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(weth, big.NewInt(100)), core.ExactOutput)
 	route, _ = trade.Route()
 	params, err = QuoteCallParameters(route, trade.OutputAmount(), trade.TradeType, nil)
 	if err != nil {
@@ -110,7 +110,7 @@ func TestQuoteCallParameters(t *testing.T) {
 
 	// sqrtPriceLimitX96
 	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1}, token0, token1)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0.Currency, big.NewInt(100)), core.ExactInput)
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0, big.NewInt(100)), core.ExactInput)
 	route, _ = trade.Route()
 	params, err = QuoteCallParameters(route, trade.InputAmount(), trade.TradeType, &QuoteOptions{SqrtPriceLimitX96: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil)})
 	if err != nil {

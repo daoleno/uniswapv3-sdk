@@ -77,18 +77,18 @@ type ExactOutputParams struct {
  * @param trade to produce call parameters for
  * @param options options for the call parameters
  */
-func SwapCallParameters(trades []*entities.Trade, tokenIn, tokenOut *core.Token, options *SwapOptions) (*utils.MethodParameters, error) {
+func SwapCallParameters(trades []*entities.Trade, options *SwapOptions) (*utils.MethodParameters, error) {
 	abi := GetABI(swapRouterABI)
-	// TODO: merge tokenIn/tokenOut into Trade
 	sampleTrade := trades[0]
+	tokenIn := sampleTrade.InputAmount().Currency.Wrapped()
+	tokenOut := sampleTrade.OutputAmount().Currency.Wrapped()
 
 	// All trades should have the same starting and ending token.
-	// TODO: should compare token other than currency
 	for _, trade := range trades {
-		if trade.InputAmount().Currency != tokenIn.Currency {
+		if !trade.InputAmount().Currency.Wrapped().Equal(tokenIn) {
 			return nil, ErrTokenInDiff
 		}
-		if trade.OutputAmount().Currency != tokenOut.Currency {
+		if !trade.OutputAmount().Currency.Wrapped().Equal(tokenOut) {
 			return nil, ErrTokenOutDiff
 		}
 	}
@@ -108,10 +108,10 @@ func SwapCallParameters(trades []*entities.Trade, tokenIn, tokenOut *core.Token,
 	}
 
 	// flag for whether a refund needs to happen
-	mustRefund := sampleTrade.InputAmount().Currency.IsNative && sampleTrade.TradeType == core.ExactOutput
-	inputIsNative := sampleTrade.InputAmount().Currency.IsNative
+	mustRefund := sampleTrade.InputAmount().Currency.IsNative() && sampleTrade.TradeType == core.ExactOutput
+	inputIsNative := sampleTrade.InputAmount().Currency.IsNative()
 	// flags for whether funds should be send first to the router
-	outputIsNative := sampleTrade.OutputAmount().Currency.IsNative
+	outputIsNative := sampleTrade.OutputAmount().Currency.IsNative()
 	routerMustCustody := outputIsNative || options.Fee != nil
 
 	totalValue := ZeroIn
@@ -121,13 +121,13 @@ func SwapCallParameters(trades []*entities.Trade, tokenIn, tokenOut *core.Token,
 			if err != nil {
 				return nil, err
 			}
-			totalValue.Add(maxIn)
+			totalValue = totalValue.Add(maxIn)
 		}
 	}
 
 	// encode permit if necessary
 	if options.InputTokenPermit != nil {
-		if !sampleTrade.InputAmount().Currency.IsToken {
+		if !sampleTrade.InputAmount().Currency.IsToken() {
 			return nil, ErrNonTokenPermit
 		}
 
@@ -242,20 +242,20 @@ func SwapCallParameters(trades []*entities.Trade, tokenIn, tokenOut *core.Token,
 	if routerMustCustody {
 		if options.Fee != nil {
 			if outputIsNative {
-				calldata, err := EncodeUnwrapWETH9(totalAmountOut.Quotient(), recipient, options.Fee)
+				calldata, err := EncodeUnwrapWETH9(totalAmountOut.Quotient(), options.Recipient, options.Fee)
 				if err != nil {
 					return nil, err
 				}
 				calldatas = append(calldatas, calldata)
 			} else {
-				calldata, err := EncodeSweepToken(tokenOut, totalAmountOut.Quotient(), recipient, options.Fee)
+				calldata, err := EncodeSweepToken(tokenOut, totalAmountOut.Quotient(), options.Recipient, options.Fee)
 				if err != nil {
 					return nil, err
 				}
 				calldatas = append(calldatas, calldata)
 			}
 		} else {
-			calldata, err := EncodeUnwrapWETH9(totalAmountOut.Quotient(), recipient, nil)
+			calldata, err := EncodeUnwrapWETH9(totalAmountOut.Quotient(), options.Recipient, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -267,7 +267,6 @@ func SwapCallParameters(trades []*entities.Trade, tokenIn, tokenOut *core.Token,
 	if mustRefund {
 		calldatas = append(calldatas, EncodeRefundETH())
 	}
-
 	call, err := EncodeMulticall(calldatas)
 	if err != nil {
 		return nil, err

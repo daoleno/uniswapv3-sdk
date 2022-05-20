@@ -83,10 +83,10 @@ func TestPriceToClosestTick(t *testing.T) {
 		args     args
 		wantTick int
 	}{
-		{"1800 t0/1 t1", args{entities.NewPrice(token1.Currency, token0.Currency, big.NewInt(1), big.NewInt(1800)), token1, token0}, -74960},
-		{"1 t1/1800 t0", args{entities.NewPrice(token0.Currency, token1.Currency, big.NewInt(1800), big.NewInt(1)), token0, token1}, -74960},
-		{"1.01 t2/1 t0", args{entities.NewPrice(token0.Currency, token2_6decimals.Currency, B100e18, big.NewInt(101e6)), token0, token2_6decimals}, -276225},
-		{"1 t0/1.01 t2", args{entities.NewPrice(token2_6decimals.Currency, token0.Currency, big.NewInt(101e6), B100e18), token2_6decimals, token0}, -276225},
+		{"1800 t0/1 t1", args{entities.NewPrice(token1, token0, big.NewInt(1), big.NewInt(1800)), token1, token0}, -74960},
+		{"1 t1/1800 t0", args{entities.NewPrice(token0, token1, big.NewInt(1800), big.NewInt(1)), token0, token1}, -74960},
+		{"1.01 t2/1 t0", args{entities.NewPrice(token0, token2_6decimals, B100e18, big.NewInt(101e6)), token0, token2_6decimals}, -276225},
+		{"1 t0/1.01 t2", args{entities.NewPrice(token2_6decimals, token0, big.NewInt(101e6), B100e18), token2_6decimals, token0}, -276225},
 
 		// reciprocal with tickToPrice
 		{"1800 t0/1 t1", args{tickToPriceNoError(token1, token0, -74960), token1, token0}, -74960},
