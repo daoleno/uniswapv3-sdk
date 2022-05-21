@@ -28,8 +28,8 @@ func TestSwapCallParameters(t *testing.T) {
 	// single trade input
 	// single-hop exact input
 	r, _ := entities.NewRoute([]*entities.Pool{pool_0_1}, token0, token1)
-	trade, _ := entities.FromRoute(r, core.FromRawAmount(token0.Currency, big.NewInt(100)), core.ExactInput)
-	params, err := SwapCallParameters([]*entities.Trade{trade}, token0, token1, &SwapOptions{
+	trade, _ := entities.FromRoute(r, core.FromRawAmount(token0, big.NewInt(100)), core.ExactInput)
+	params, err := SwapCallParameters([]*entities.Trade{trade}, &SwapOptions{
 		SlippageTolerance: slippageTolerance,
 		Recipient:         recipient,
 		Deadline:          deadline,
@@ -42,8 +42,8 @@ func TestSwapCallParameters(t *testing.T) {
 
 	// single-hop exact output
 	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1}, token0, token1)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(token1.Currency, big.NewInt(100)), core.ExactOutput)
-	params, err = SwapCallParameters([]*entities.Trade{trade}, token0, token1, &SwapOptions{
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(token1, big.NewInt(100)), core.ExactOutput)
+	params, err = SwapCallParameters([]*entities.Trade{trade}, &SwapOptions{
 		SlippageTolerance: slippageTolerance,
 		Recipient:         recipient,
 		Deadline:          deadline,
@@ -56,8 +56,8 @@ func TestSwapCallParameters(t *testing.T) {
 
 	// multi-hop exact input
 	r, _ = entities.NewRoute([]*entities.Pool{pool_0_1, pool_1_weth}, token0, weth)
-	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0.Currency, big.NewInt(100)), core.ExactInput)
-	params, err = SwapCallParameters([]*entities.Trade{trade}, token0, weth, &SwapOptions{
+	trade, _ = entities.FromRoute(r, core.FromRawAmount(token0, big.NewInt(100)), core.ExactInput)
+	params, err = SwapCallParameters([]*entities.Trade{trade}, &SwapOptions{
 		SlippageTolerance: slippageTolerance,
 		Recipient:         recipient,
 		Deadline:          deadline,

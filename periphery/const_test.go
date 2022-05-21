@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	ether  = core.NewNativeToken(1, common.Address{}, 18, "ETH", "Ether")
+	ether  = core.EtherOnChain(1)
 	token0 = core.NewToken(1, common.HexToAddress("0x0000000000000000000000000000000000000001"), 18, "t0", "token0")
 	token1 = core.NewToken(1, common.HexToAddress("0x0000000000000000000000000000000000000002"), 18, "t1", "token1")
 	token2 = core.NewToken(1, common.HexToAddress("0x0000000000000000000000000000000000000003"), 18, "t2", "token2")
 	token3 = core.NewToken(1, common.HexToAddress("0x0000000000000000000000000000000000000004"), 18, "t2", "token3")
 
-	weth = core.WETH9[1]
+	weth = ether.Wrapped()
 
 	pool_0_1_medium, _ = entities.NewPool(token0, token1, constants.FeeMedium, utils.EncodeSqrtRatioX96(constants.One, constants.One), big.NewInt(0), 0, nil)
 	pool_1_2_low, _    = entities.NewPool(token1, token2, constants.FeeLow, utils.EncodeSqrtRatioX96(constants.One, constants.One), big.NewInt(0), 0, nil)

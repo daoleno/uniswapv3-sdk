@@ -3,7 +3,7 @@ module github.com/daoleno/uniswapv3-sdk
 go 1.17
 
 require (
-	github.com/daoleno/uniswap-sdk-core v0.1.3
+	github.com/daoleno/uniswap-sdk-core v0.1.4
 	github.com/ethereum/go-ethereum v1.10.15
 	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.7.0

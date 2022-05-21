@@ -76,15 +76,15 @@ func (p *Position) Amount0() (*entities.CurrencyAmount, error) {
 			if err != nil {
 				return nil, err
 			}
-			p.token0Amount = entities.FromRawAmount(p.Pool.Token0.Currency, utils.GetAmount0Delta(sqrtTickLower, sqrtTickUpper, p.Liquidity, false))
+			p.token0Amount = entities.FromRawAmount(p.Pool.Token0, utils.GetAmount0Delta(sqrtTickLower, sqrtTickUpper, p.Liquidity, false))
 		} else if p.Pool.TickCurrent < p.TickUpper {
 			sqrtTickUpper, err := utils.GetSqrtRatioAtTick(p.TickUpper)
 			if err != nil {
 				return nil, err
 			}
-			p.token0Amount = entities.FromRawAmount(p.Pool.Token0.Currency, utils.GetAmount0Delta(p.Pool.SqrtRatioX96, sqrtTickUpper, p.Liquidity, true))
+			p.token0Amount = entities.FromRawAmount(p.Pool.Token0, utils.GetAmount0Delta(p.Pool.SqrtRatioX96, sqrtTickUpper, p.Liquidity, true))
 		} else {
-			p.token0Amount = entities.FromRawAmount(p.Pool.Token0.Currency, constants.Zero)
+			p.token0Amount = entities.FromRawAmount(p.Pool.Token0, constants.Zero)
 		}
 	}
 	return p.token0Amount, nil
@@ -94,13 +94,13 @@ func (p *Position) Amount0() (*entities.CurrencyAmount, error) {
 func (p *Position) Amount1() (*entities.CurrencyAmount, error) {
 	if p.token1Amount == nil {
 		if p.Pool.TickCurrent < p.TickLower {
-			p.token1Amount = entities.FromRawAmount(p.Pool.Token1.Currency, constants.Zero)
+			p.token1Amount = entities.FromRawAmount(p.Pool.Token1, constants.Zero)
 		} else if p.Pool.TickCurrent < p.TickUpper {
 			sqrtTickLower, err := utils.GetSqrtRatioAtTick(p.TickLower)
 			if err != nil {
 				return nil, err
 			}
-			p.token1Amount = entities.FromRawAmount(p.Pool.Token1.Currency, utils.GetAmount1Delta(sqrtTickLower, p.Pool.SqrtRatioX96, p.Liquidity, false))
+			p.token1Amount = entities.FromRawAmount(p.Pool.Token1, utils.GetAmount1Delta(sqrtTickLower, p.Pool.SqrtRatioX96, p.Liquidity, false))
 		} else {
 			sqrtTickLower, err := utils.GetSqrtRatioAtTick(p.TickLower)
 			if err != nil {
@@ -110,7 +110,7 @@ func (p *Position) Amount1() (*entities.CurrencyAmount, error) {
 			if err != nil {
 				return nil, err
 			}
-			p.token1Amount = entities.FromRawAmount(p.Pool.Token1.Currency, utils.GetAmount1Delta(sqrtTickLower, sqrtTickUpper, p.Liquidity, false))
+			p.token1Amount = entities.FromRawAmount(p.Pool.Token1, utils.GetAmount1Delta(sqrtTickLower, sqrtTickUpper, p.Liquidity, false))
 		}
 	}
 	return p.token1Amount, nil

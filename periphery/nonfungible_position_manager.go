@@ -47,11 +47,9 @@ type IncreaseSpecificOptions struct {
 type CommonAddLiquidityOptions struct {
 	SlippageTolerance *core.Percent  // How much the pool price is allowed to move
 	Deadline          *big.Int       // When the transaction expires, in epoch seconds
-	UseNative         *core.Currency // Whether to spend ether. If true, one of the pool tokens must be WETH, by default false
-	NativeToken       *core.Token    // TODO: merge this with UseNative
-
-	Token0Permit *PermitOptions // The optional permit parameters for spending token0
-	Token1Permit *PermitOptions // The optional permit parameters for spending token1
+	UseNative         *core.Ether    // Whether to spend ether. If true, one of the pool tokens must be WETH, by default false
+	Token0Permit      *PermitOptions // The optional permit parameters for spending token0
+	Token1Permit      *PermitOptions // The optional permit parameters for spending token1
 }
 
 type MintOptions struct {
@@ -81,9 +79,9 @@ type CollectOptions struct {
 	TokenID               *big.Int             // Indicates the ID of the position to collect for
 	ExpectedCurrencyOwed0 *core.CurrencyAmount // Expected value of tokensOwed0, including as-of-yet-unaccounted-for fees/liquidity value to be burned
 	ExpectedCurrencyOwed1 *core.CurrencyAmount // Expected value of tokensOwed1, including as-of-yet-unaccounted-for fees/liquidity value to be burned
-	ExpectedTokenOwed0    *core.Token          // TODO: merge this with Currency
-	ExpectedTokenOwed1    *core.Token          // TODO: merge this with Currency
-	Recipient             common.Address       // The account that should receive the tokens
+	ExpectedTokenOwed0    core.Currency
+	ExpectedTokenOwed1    core.Currency
+	Recipient             common.Address // The account that should receive the tokens
 }
 
 type NFTPermitOptions struct {
@@ -244,11 +242,12 @@ func AddCallParameters(position *entities.Position, opts *AddLiquidityOptions) (
 
 	value := constants.Zero
 	if opts.UseNative != nil {
-		if !position.Pool.Token0.Equals(opts.NativeToken) && !position.Pool.Token1.Equals(opts.NativeToken) {
+		wrapped := opts.UseNative.Wrapped()
+		if !position.Pool.Token0.Equal(wrapped) && !position.Pool.Token1.Equal(wrapped) {
 			return nil, ErrNoWETH
 		}
 
-		if position.Pool.Token0.Equals(opts.NativeToken) {
+		if position.Pool.Token0.Equal(wrapped) {
 			value = amount0Desired
 		} else {
 			value = amount1Desired
@@ -274,7 +273,7 @@ func AddCallParameters(position *entities.Position, opts *AddLiquidityOptions) (
 func encodeCollect(opts *CollectOptions) ([][]byte, error) {
 	var calldatas [][]byte
 
-	involvesETH := opts.ExpectedCurrencyOwed0.Currency.IsNative || opts.ExpectedCurrencyOwed1.Currency.IsNative
+	involvesETH := opts.ExpectedCurrencyOwed0.Currency.IsNative() || opts.ExpectedCurrencyOwed1.Currency.IsNative()
 
 	// collect
 	abi := getNonFungiblePositionManagerABI()
@@ -299,13 +298,13 @@ func encodeCollect(opts *CollectOptions) ([][]byte, error) {
 			token       *core.Token
 			tokenAmount *big.Int
 		)
-		if opts.ExpectedCurrencyOwed0.Currency.IsNative {
+		if opts.ExpectedCurrencyOwed0.Currency.IsNative() {
 			ethAmount = opts.ExpectedCurrencyOwed0.Quotient()
-			token = opts.ExpectedTokenOwed1
+			token = opts.ExpectedTokenOwed1.Wrapped()
 			tokenAmount = opts.ExpectedCurrencyOwed1.Quotient()
 		} else {
 			ethAmount = opts.ExpectedCurrencyOwed1.Quotient()
-			token = opts.ExpectedTokenOwed0
+			token = opts.ExpectedTokenOwed0.Wrapped()
 			tokenAmount = opts.ExpectedCurrencyOwed0.Quotient()
 		}
 

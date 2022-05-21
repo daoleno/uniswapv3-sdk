@@ -101,7 +101,7 @@ func NewPool(tokenA, tokenB *entities.Token, fee constants.FeeAmount, sqrtRatioX
  * @returns True if token is either token0 or token
  */
 func (p *Pool) InvolvesToken(token *entities.Token) bool {
-	return p.Token0.Equals(token) || p.Token1.Equals(token)
+	return p.Token0.Equal(token) || p.Token1.Equal(token)
 }
 
 // Token0Price returns the current mid price of the pool in terms of token0, i.e. the ratio of token1 over token0
@@ -109,7 +109,7 @@ func (p *Pool) Token0Price() *entities.Price {
 	if p.token0Price != nil {
 		return p.token0Price
 	}
-	p.token0Price = entities.NewPrice(p.Token0.Currency, p.Token1.Currency, constants.Q192, new(big.Int).Mul(p.SqrtRatioX96, p.SqrtRatioX96))
+	p.token0Price = entities.NewPrice(p.Token0, p.Token1, constants.Q192, new(big.Int).Mul(p.SqrtRatioX96, p.SqrtRatioX96))
 	return p.token0Price
 }
 
@@ -118,7 +118,7 @@ func (p *Pool) Token1Price() *entities.Price {
 	if p.token1Price != nil {
 		return p.token1Price
 	}
-	p.token1Price = entities.NewPrice(p.Token1.Currency, p.Token0.Currency, new(big.Int).Mul(p.SqrtRatioX96, p.SqrtRatioX96), constants.Q192)
+	p.token1Price = entities.NewPrice(p.Token1, p.Token0, new(big.Int).Mul(p.SqrtRatioX96, p.SqrtRatioX96), constants.Q192)
 	return p.token1Price
 }
 
@@ -131,7 +131,7 @@ func (p *Pool) PriceOf(token *entities.Token) (*entities.Price, error) {
 	if !p.InvolvesToken(token) {
 		return nil, ErrTokenNotInvolved
 	}
-	if p.Token0.Equals(token) {
+	if p.Token0.Equal(token) {
 		return p.Token0Price(), nil
 	}
 	return p.Token1Price(), nil
@@ -139,7 +139,7 @@ func (p *Pool) PriceOf(token *entities.Token) (*entities.Price, error) {
 
 // ChainId returns the chain ID of the tokens in the pool.
 func (p *Pool) ChainID() uint {
-	return p.Token0.ChainID
+	return p.Token0.ChainId()
 }
 
 /**
@@ -149,9 +149,10 @@ func (p *Pool) ChainID() uint {
  * @returns The output amount and the pool with updated state
  */
 func (p *Pool) GetOutputAmount(inputAmount *entities.CurrencyAmount, sqrtPriceLimitX96 *big.Int) (*entities.CurrencyAmount, *Pool, error) {
-	// TODO: check involoves token
-	// invariant(this.involvesToken(inputAmount.currency), 'TOKEN')
-	zeroForOne := inputAmount.Currency.Equal(p.Token0.Currency)
+	if !(inputAmount.Currency.IsToken() && p.InvolvesToken(inputAmount.Currency.Wrapped())) {
+		return nil, nil, ErrTokenNotInvolved
+	}
+	zeroForOne := inputAmount.Currency.Equal(p.Token0)
 	outputAmount, sqrtRatioX96, liquidity, tickCurrent, err := p.swap(zeroForOne, inputAmount.Quotient(), sqrtPriceLimitX96)
 	if err != nil {
 		return nil, nil, err
@@ -166,7 +167,7 @@ func (p *Pool) GetOutputAmount(inputAmount *entities.CurrencyAmount, sqrtPriceLi
 	if err != nil {
 		return nil, nil, err
 	}
-	return entities.FromRawAmount(outputToken.Currency, new(big.Int).Mul(outputAmount, constants.NegativeOne)), pool, nil
+	return entities.FromRawAmount(outputToken, new(big.Int).Mul(outputAmount, constants.NegativeOne)), pool, nil
 }
 
 /**
@@ -176,9 +177,10 @@ func (p *Pool) GetOutputAmount(inputAmount *entities.CurrencyAmount, sqrtPriceLi
  * @returns The input amount and the pool with updated state
  */
 func (p *Pool) GetInputAmount(outputAmount *entities.CurrencyAmount, sqrtPriceLimitX96 *big.Int) (*entities.CurrencyAmount, *Pool, error) {
-	// TODO: check involoves token
-	// invariant(outputAmount.currency.isToken && this.involvesToken(outputAmount.currency), 'TOKEN')
-	zeroForOne := outputAmount.Currency.Equal(p.Token1.Currency)
+	if !(outputAmount.Currency.IsToken() && p.InvolvesToken(outputAmount.Currency.Wrapped())) {
+		return nil, nil, ErrTokenNotInvolved
+	}
+	zeroForOne := outputAmount.Currency.Equal(p.Token1)
 	inputAmount, sqrtRatioX96, liquidity, tickCurrent, err := p.swap(zeroForOne, new(big.Int).Mul(outputAmount.Quotient(), constants.NegativeOne), sqrtPriceLimitX96)
 	if err != nil {
 		return nil, nil, err
@@ -193,7 +195,7 @@ func (p *Pool) GetInputAmount(outputAmount *entities.CurrencyAmount, sqrtPriceLi
 	if err != nil {
 		return nil, nil, err
 	}
-	return entities.FromRawAmount(inputToken.Currency, inputAmount), pool, nil
+	return entities.FromRawAmount(inputToken, inputAmount), pool, nil
 }
 
 /**

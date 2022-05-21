@@ -95,7 +95,7 @@ func QuoteCallParameters(
  */
 func EncodeRouteToPath(route *entities.Route, exactOutput bool) ([]byte, error) {
 	var (
-		inputToken = route.Input
+		inputToken = route.Input.Wrapped()
 
 		types []string
 		path  []interface{}
@@ -106,7 +106,7 @@ func EncodeRouteToPath(route *entities.Route, exactOutput bool) ([]byte, error) 
 
 	for i, pool := range route.Pools {
 		var outputToken *core.Token
-		if pool.Token0.Equals(inputToken) {
+		if pool.Token0.Equal(inputToken) {
 			outputToken = pool.Token1
 		} else {
 			outputToken = pool.Token0
