@@ -64,7 +64,7 @@ func main() {
 	}
 
 	// USDC -> DAI
-	outputAmount := core.FromRawAmount(DAI.Currency, big.NewInt(98))
+	outputAmount := core.FromRawAmount(DAI, big.NewInt(98))
 	inputAmount, _, err := pool.GetInputAmount(outputAmount, nil)
 	if err != nil {
 		panic(err)
