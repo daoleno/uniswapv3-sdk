@@ -1,6 +1,7 @@
 # Examples
 [quoter](./quoter/main.go) - get the swapped amount from chain.   
-[swap](./pool/main.go) - swap two tokens on chain.      
+[swap](./swap/main.go) - swap two tokens on chain.      
+https://github.com/daoleno/uniswapv3-sdk/blob/master/examples/swap/main.go
 [liquidity](liquidity/main.go) - shows how to mint/add/remove/burn a liquidity position.   
 
 ## Usage 
