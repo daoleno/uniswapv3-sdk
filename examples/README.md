@@ -1,6 +1,6 @@
 # Examples
 [quoter](./quoter/main.go) - get the swapped amount from chain.   
-[swap](./pool/main.go) - swap two tokens on chain.      
+[swap](./swap/main.go) - swap two tokens on chain.      
 [liquidity](liquidity/main.go) - shows how to mint/add/remove/burn a liquidity position.   
 
 ## Usage 
