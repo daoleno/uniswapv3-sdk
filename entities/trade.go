@@ -624,7 +624,7 @@ func sortedInsert(items []*Trade, add *Trade, maxSize int, comparator func(a, b 
 	isFull := len(items) == maxSize
 
 	if isFull && comparator(items[maxSize-1], add) <= 0 {
-		return []*Trade{add}, nil
+		return items, nil
 	}
 
 	i := sort.Search(len(items), func(i int) bool {
