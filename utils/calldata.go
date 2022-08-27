@@ -19,7 +19,7 @@ func ToHex(i *big.Int) string {
 		return "0x00"
 	}
 
-	hex := i.String()
+	hex := i.Text(16)
 	if len(hex)%2 != 0 {
 		hex = "0" + hex
 	}
