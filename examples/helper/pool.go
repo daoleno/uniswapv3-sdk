@@ -50,25 +50,30 @@ func ConstructV3Pool(client *ethclient.Client, token0, token1 *coreEntities.Toke
 	if err != nil {
 		return nil, err
 	}
-
-	pooltick, err := contractPool.Ticks(nil, big.NewInt(0))
+	
+	feeAmount := constants.FeeAmount(poolFee)
+	lowerIndex := entities.NearestUsableTick(sdkutils.MinTick, constants.TickSpacings[feeAmount])
+	lowerTick, err := contractPool.Ticks(nil, big.NewInt(int64(lowerIndex)))
 	if err != nil {
 		return nil, err
 	}
 
-	feeAmount := constants.FeeAmount(poolFee)
+	upperIndex := entities.NearestUsableTick(sdkutils.MaxTick, constants.TickSpacings[feeAmount])
+	upperTick, err := contractPool.Ticks(nil, big.NewInt(int64(upperIndex)))
+	if err != nil {
+		return nil, err
+	}
+		
 	ticks := []entities.Tick{
 		{
-			Index: entities.NearestUsableTick(sdkutils.MinTick,
-				constants.TickSpacings[feeAmount]),
-			LiquidityNet:   pooltick.LiquidityNet,
-			LiquidityGross: pooltick.LiquidityGross,
+			Index: lowerIndex,
+			LiquidityNet:   lowerTick.LiquidityNet,
+			LiquidityGross: lowerTick.LiquidityGross,
 		},
 		{
-			Index: entities.NearestUsableTick(sdkutils.MaxTick,
-				constants.TickSpacings[feeAmount]),
-			LiquidityNet:   pooltick.LiquidityNet,
-			LiquidityGross: pooltick.LiquidityGross,
+			Index: upperIndex,
+			LiquidityNet:   upperTick.LiquidityNet,
+			LiquidityGross: upperTick.LiquidityGross,
 		},
 	}
 
